@@ -272,6 +272,11 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .mg-b{margin-bottom:12px}
 .section-divider{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;padding:10px 0 8px;border-bottom:1px solid rgba(229,83,75,0.2);margin-bottom:14px}
 .section-divider-green{color:var(--green);border-bottom-color:rgba(15,168,110,0.2)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0D1B2A}
+::-webkit-scrollbar-thumb{background:#1E6FBF;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2E8FEF}
+*{scrollbar-width:thin;scrollbar-color:#1E6FBF #0D1B2A}
 </style>
 </head>
 <body>
@@ -403,7 +408,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 
 <!-- ASSETS VIEW -->
 <div class="view" id="view-assets">
-  <div class="table-area" style="max-height:calc(100vh - 60px)">
+  <div class="table-area" style="height:calc(100vh - 60px);overflow-y:auto;overflow-x:auto;">
     <div class="table-toolbar">
       <h2>FULL ASSET REGISTER</h2>
       <span class="count-badge" id="assetCount2">0 assets</span>
