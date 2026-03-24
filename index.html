@@ -539,7 +539,13 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       <div class="dash-card-title">ASSET LABEL GENERATOR</div>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Generate printable labels for your assets. Click any label to select/deselect, then print selected.</p>
       <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-        <div class="filter-select-wrap"><select class="filter-select" id="labelSiteFilter" onchange="renderLabels()"><option value="">All Sites</option></select></div>
+        <div class="custom-select" id="customLabelSiteFilter" style="min-width:200px">
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('customLabelSiteFilter')">
+            <span class="custom-select-value">All Sites</span>
+            <div class="custom-select-arrow"></div>
+          </div>
+          <div class="custom-select-dropdown" id="customLabelSiteFilterDropdown"></div>
+        </div>
         <button class="export-btn" onclick="printLabels()">🖨 Print Selected Labels</button>
         <button class="import-btn" onclick="selectAllLabels()">Select All</button>
       </div>
@@ -820,13 +826,7 @@ function populateSiteFilters() {
   };
   buildCustomOptions('customSiteFilter', "renderAssets(document.getElementById('searchBox').value)");
   buildCustomOptions('customSiteFilter2', "renderAssetsFull(document.getElementById('searchBox2').value)");
-  const labelEl = document.getElementById('labelSiteFilter');
-  if (labelEl) {
-    const cur = labelEl.value;
-    labelEl.innerHTML = '<option value="">All Sites</option>';
-    sites.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; labelEl.appendChild(o); });
-    labelEl.value = cur;
-  }
+  buildCustomOptions('customLabelSiteFilter', "renderLabels()");
 }
 function populateLogTechFilter() {
   const el = document.getElementById('logTechFilter'); if (!el) return;
@@ -1226,7 +1226,7 @@ function renderDash() {
 
 // ── LABEL GENERATOR ────────────────────────────────────────────────────────
 function renderLabels() {
-  const siteFilter=document.getElementById('labelSiteFilter')?.value||'';
+  const siteFilter=getCustomSelectValue('customLabelSiteFilter')||'';
   const list=siteFilter?assets.filter(a=>a.site===siteFilter):assets;
   document.getElementById('labelArea').innerHTML=list.map(a=>`
     <div class="asset-label${selectedLabels.has(a.id)?' selected':''}" id="lbl-${a.id}" onclick="toggleLabel('${a.id}')" style="${selectedLabels.has(a.id)?'box-shadow:0 0 0 3px #00C2D4;':''}">
