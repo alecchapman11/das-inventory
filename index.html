@@ -323,6 +323,9 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .login-custom-option{padding:10px 14px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:background 0.12s}
 .login-custom-option:hover{background:rgba(30,111,191,0.2)}
 .login-custom-option.selected{color:#00C2D4;background:rgba(0,194,212,0.08)}
+.modal-section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.transfer-from{background:rgba(30,111,191,0.06);border:1px solid rgba(30,111,191,0.15);border-radius:6px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--text-dim)}
+.transfer-from strong{color:var(--cyan);font-family:var(--mono)}
 .custom-select{position:relative;width:100%;margin-bottom:12px}
 .custom-select-trigger{display:flex;align-items:center;justify-content:space-between;background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:9px 12px;font-family:var(--sans);font-size:13px;color:var(--text);cursor:pointer;transition:border-color 0.15s;user-select:none}
 .custom-select-trigger:hover{border-color:var(--blue)}
@@ -691,6 +694,41 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
     <div class="modal-actions">
       <button class="modal-btn modal-btn-cancel" onclick="closeModal('addTechModal')">Cancel</button>
       <button class="modal-btn modal-btn-primary" onclick="addTechnician()">Add Technician</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="transferModal">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="closeModal('transferModal')">✕</button>
+    <div class="modal-title">🔄 Transfer Asset</div>
+    <input type="hidden" id="transfer-asset-id">
+    <div class="transfer-from" id="transferFrom">
+      Transferring <strong id="transfer-from-id">—</strong> from <strong id="transfer-from-site">—</strong>
+    </div>
+    <div class="modal-section-label">New Location</div>
+    <div class="form-group mg-b">
+      <label>New Site / Project</label>
+      <input type="text" id="transfer-site" placeholder="e.g. Site B – Warehouse" list="transfer-site-list">
+      <datalist id="transfer-site-list"></datalist>
+    </div>
+    <div class="form-grid mg-b">
+      <div class="form-group">
+        <label>Building</label>
+        <input type="text" id="transfer-building" placeholder="Building">
+      </div>
+      <div class="form-group">
+        <label>Floor / Zone</label>
+        <input type="text" id="transfer-zone" placeholder="Floor / Zone">
+      </div>
+    </div>
+    <div class="form-group mg-b">
+      <label>Reason for Transfer</label>
+      <textarea id="transfer-reason" placeholder="Optional — e.g. Redeployed to new project" style="min-height:60px"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('transferModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmTransfer()">🔄 Confirm Transfer</button>
     </div>
   </div>
 </div>
@@ -1117,6 +1155,7 @@ function tableHTML(rows,full) {
             <button class="act-item act-edit" onclick="openEdit('${a.id}')">✎ Edit</button>
             <button class="act-item act-hist" onclick="openHistory('${a.id}')">◎ History</button>
             <button class="act-item act-label" onclick="openLabelModal('${a.id}')">🏷 Print Label</button>
+            <button class="act-item" style="color:var(--cyan)" onclick="openTransfer('${a.id}')">🔄 Transfer Site</button>
             <button class="act-item act-photo" onclick="openPhotos('${a.id}')">📷 Photos${a.photos&&a.photos.length?' ('+a.photos.length+')':''}</button>
             <div class="act-divider"></div>
             <button class="act-item act-del" onclick="openDelete('${a.id}')">✕ Delete</button>
@@ -1572,6 +1611,57 @@ document.addEventListener('click', e => {
     document.getElementById('notifPanel')?.classList.remove('open');
   }
 });
+
+// ── TRANSFER ───────────────────────────────────────────────────────────────
+function openTransfer(id) {
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('transfer-asset-id').value = id;
+  document.getElementById('transfer-from-id').textContent = id;
+  document.getElementById('transfer-from-site').textContent = a.site || '—';
+  document.getElementById('transfer-site').value = '';
+  document.getElementById('transfer-building').value = '';
+  document.getElementById('transfer-zone').value = '';
+  document.getElementById('transfer-reason').value = '';
+  const sites = [...new Set(assets.map(x => x.site).filter(Boolean))];
+  document.getElementById('transfer-site-list').innerHTML = sites.map(s => `<option value="${s}">`).join('');
+  openModal('transferModal');
+}
+function confirmTransfer() {
+  const id = document.getElementById('transfer-asset-id').value;
+  const newSite = document.getElementById('transfer-site').value.trim();
+  const newBuilding = document.getElementById('transfer-building').value.trim();
+  const newZone = document.getElementById('transfer-zone').value.trim();
+  const reason = document.getElementById('transfer-reason').value.trim();
+  if (!newSite) { toast('⚠ Please enter a new site', '#F5A623'); return; }
+  const idx = assets.findIndex(a => a.id === id);
+  if (idx < 0) return;
+  const oldSite = assets[idx].site;
+  const oldBuilding = assets[idx].building;
+  const oldZone = assets[idx].zone;
+  assets[idx].site = newSite;
+  assets[idx].building = newBuilding || assets[idx].building;
+  assets[idx].zone = newZone || assets[idx].zone;
+  if (!assetHistory[id]) assetHistory[id] = [];
+  assetHistory[id].unshift({
+    date: new Date().toLocaleString(),
+    tech: currentTech,
+    action: 'Site Transfer',
+    snapshot: {
+      status: assets[idx].status,
+      condition: assets[idx].condition,
+      rma: assets[idx].rma,
+      notes: `Transferred from ${oldSite} (${oldBuilding} / ${oldZone}) → ${newSite} (${newBuilding} / ${newZone})${reason ? ' — ' + reason : ''}`
+    }
+  });
+  save();
+  closeModal('transferModal');
+  populateSiteFilters();
+  renderAssets('');
+  renderAssetsFull('');
+  renderNotifBell();
+  toast('✓ ' + id + ' transferred to ' + newSite);
+}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
