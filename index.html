@@ -283,6 +283,39 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 ::-webkit-scrollbar-thumb{background:#1E6FBF;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#2E8FEF}
 *{scrollbar-width:thin;scrollbar-color:#1E6FBF #0D1B2A}
+.notif-bell{position:relative;cursor:pointer;padding:6px 8px;border-radius:6px;transition:background 0.15s;display:flex;align-items:center;justify-content:center}
+.notif-bell:hover{background:rgba(255,255,255,0.06)}
+.notif-bell svg{width:18px;height:18px;stroke:var(--slate);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.15s}
+.notif-bell.has-alerts svg{stroke:var(--amber)}
+.notif-badge{position:absolute;top:2px;right:2px;background:var(--red);color:#fff;font-family:var(--mono);font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--navy-mid)}
+.notif-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;width:360px;background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);z-index:500;overflow:hidden}
+.notif-panel.open{display:block}
+.notif-panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.notif-panel-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase}
+.notif-clear{font-size:11px;color:var(--text-dim);cursor:pointer;background:none;border:none;font-family:var(--sans)}
+.notif-clear:hover{color:var(--red)}
+.notif-empty{padding:24px;text-align:center;color:var(--text-dim);font-size:13px}
+.notif-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background 0.12s}
+.notif-item:hover{background:rgba(255,255,255,0.04)}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.notif-icon-warn{background:rgba(245,166,35,0.15)}
+.notif-icon-red{background:rgba(229,83,75,0.15)}
+.notif-icon-blue{background:rgba(30,111,191,0.15)}
+.notif-content{flex:1}
+.notif-content-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.notif-content-sub{font-size:11px;color:var(--text-dim);font-family:var(--mono)}
+.notif-group-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;padding:10px 16px 4px;background:rgba(0,0,0,0.15)}
+.login-custom-select{position:relative;width:100%;margin-bottom:18px}
+.login-custom-trigger{display:flex;align-items:center;justify-content:space-between;background:#0D1B2A;border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:10px 12px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:border-color 0.15s;user-select:none}
+.login-custom-trigger:hover,.login-custom-trigger.open{border-color:#1E6FBF}
+.login-custom-arrow{width:10px;height:6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238FA3BC' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat center;background-size:contain;flex-shrink:0;transition:transform 0.2s}
+.login-custom-trigger.open .login-custom-arrow{transform:rotate(180deg)}
+.login-custom-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1B2D42;border:1px solid #1E6FBF;border-radius:6px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,0.5);overflow:hidden;max-height:200px;overflow-y:auto}
+.login-custom-dropdown.open{display:block}
+.login-custom-option{padding:10px 14px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:background 0.12s}
+.login-custom-option:hover{background:rgba(30,111,191,0.2)}
+.login-custom-option.selected{color:#00C2D4;background:rgba(0,194,212,0.08)}
 .custom-select{position:relative;width:100%;margin-bottom:12px}
 .custom-select-trigger{display:flex;align-items:center;justify-content:space-between;background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:9px 12px;font-family:var(--sans);font-size:13px;color:var(--text);cursor:pointer;transition:border-color 0.15s;user-select:none}
 .custom-select-trigger:hover{border-color:var(--blue)}
@@ -305,7 +338,13 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
     <div class="login-title">DAS Inventory<br>Management</div>
     <div class="login-sub">Sign in to continue</div>
     <label>Select Technician</label>
-    <select id="loginTech" style="-webkit-appearance:none;-moz-appearance:none;appearance:none;display:block;width:100%;background:#0D1B2A;color:#D8E6F3;border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:10px 12px;font-size:13px;font-family:sans-serif;margin-bottom:18px;outline:none;cursor:pointer"></select>
+    <div class="login-custom-select" id="loginTechWrap">
+      <div class="login-custom-trigger" id="loginTechTrigger" onclick="toggleLoginSelect()">
+        <span id="loginTechValue">— Choose your name —</span>
+        <div class="login-custom-arrow"></div>
+      </div>
+      <div class="login-custom-dropdown" id="loginTechDropdown"></div>
+    </div>
     <label>PIN (4 digits)</label>
     <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" style="display:block;width:100%;background:#0D1B2A;color:#D8E6F3;border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:10px 12px;font-size:13px;font-family:sans-serif;margin-bottom:18px;outline:none">
     <div class="login-err" id="loginErr">Incorrect PIN. Please try again.</div>
@@ -335,6 +374,19 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
     <button class="tab-btn" onclick="showView('dash',this)">◈ Dashboard</button>
     <button class="tab-btn" onclick="showView('tools',this)">⚙ Tools</button>
   </nav>
+  <div style="position:relative" id="notifWrap">
+    <div class="notif-bell" id="notifBell" onclick="toggleNotifPanel()">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div class="notif-badge" id="notifBadge" style="display:none">0</div>
+    </div>
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel-header">
+        <span class="notif-panel-title">🔔 Notifications</span>
+        <button class="notif-clear" onclick="dismissAllNotifs()">Dismiss all</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+  </div>
   <div class="tech-indicator">
     <div class="tech-dot"></div>
     <span class="tech-name" id="headerTechName">—</span>
@@ -720,20 +772,37 @@ async function save() {
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────
 function populateTechSelect() {
-  const sel = document.getElementById('loginTech');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— Choose your name —</option>';
-  techs.forEach(t => {
-    const o = document.createElement('option');
-    o.value = t.name;
-    o.textContent = t.name;
-    o.style.background = '#1B2D42';
-    o.style.color = '#D8E6F3';
-    sel.appendChild(o);
+  const dropdown = document.getElementById('loginTechDropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = [
+    `<div class="login-custom-option" data-value="" onclick="selectLoginTech('','— Choose your name —')">— Choose your name —</div>`,
+    ...techs.map(t => `<div class="login-custom-option" data-value="${t.name}" onclick="selectLoginTech('${t.name.replace(/'/g,"\\'")}','${t.name.replace(/'/g,"\\'")}')">${t.name}</div>`)
+  ].join('');
+}
+function toggleLoginSelect() {
+  const trigger = document.getElementById('loginTechTrigger');
+  const dropdown = document.getElementById('loginTechDropdown');
+  const isOpen = dropdown.classList.contains('open');
+  dropdown.classList.toggle('open', !isOpen);
+  trigger.classList.toggle('open', !isOpen);
+}
+function selectLoginTech(value, label) {
+  document.getElementById('loginTechValue').textContent = label;
+  document.getElementById('loginTechWrap').dataset.value = value;
+  document.getElementById('loginTechDropdown').classList.remove('open');
+  document.getElementById('loginTechTrigger').classList.remove('open');
+  document.querySelectorAll('.login-custom-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.value === value);
   });
 }
+document.addEventListener('click', e => {
+  if (!e.target.closest('#loginTechWrap')) {
+    document.getElementById('loginTechDropdown')?.classList.remove('open');
+    document.getElementById('loginTechTrigger')?.classList.remove('open');
+  }
+});
 async function doLogin() {
-  const name = document.getElementById('loginTech').value;
+  const name = document.getElementById('loginTechWrap')?.dataset.value || '';
   const pin = document.getElementById('loginPin').value;
   let tech = techs.find(t => t.name===name && t.pin===pin);
   if (!tech) {
@@ -780,6 +849,7 @@ async function doLogin() {
   document.getElementById('loginErr').style.display = 'none';
   setTodayDates(); populateSiteFilters(); populateLogTechFilter();
   checkWarrantyBanner(); renderAssets('');
+  renderNotifBell();
 }
 document.getElementById('loginPin').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 function doLogout() {
@@ -1397,6 +1467,98 @@ function toggleActMenu(btn, e) {
 }
 document.addEventListener('click', function() {
   document.querySelectorAll('.act-menu.open').forEach(m => m.classList.remove('open'));
+});
+
+// ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+let dismissedNotifs = new Set();
+function buildNotifications() {
+  const alerts = [];
+  const now = new Date();
+  assets.forEach(a => {
+    if (a.warranty) {
+      const days = Math.round((new Date(a.warranty) - now) / 86400000);
+      if (days >= 0 && days <= 90) {
+        alerts.push({type:'warranty', icon:'⚠️', iconClass:'notif-icon-warn', title:`Warranty expiring in ${days}d — ${a.id}`, sub:`${a.site||'—'} · Expires ${a.warranty}`, tab:'assets', id:'w-'+a.id});
+      }
+      if (days < 0) {
+        alerts.push({type:'warranty', icon:'⚠️', iconClass:'notif-icon-red', title:`Warranty EXPIRED — ${a.id}`, sub:`${a.site||'—'} · Expired ${a.warranty}`, tab:'assets', id:'wx-'+a.id});
+      }
+    }
+    if (a.rma && a.rma !== 'None' && a.rma !== 'Closed' && a.rma !== 'Replaced' && a.rmaOpenDate) {
+      const days = Math.floor((now - new Date(a.rmaOpenDate)) / 86400000);
+      if (days >= 30) {
+        alerts.push({type:'rma', icon:'🔴', iconClass:'notif-icon-red', title:`RMA open ${days} days — ${a.id}`, sub:`${a.site||'—'} · Status: ${a.rma}`, tab:'rma', id:'r-'+a.id});
+      }
+    }
+    if ((a.condition === 'Poor' || a.condition === 'Damaged') && (!a.rma || a.rma === 'None')) {
+      alerts.push({type:'condition', icon:'🔧', iconClass:'notif-icon-blue', title:`${a.condition} condition, no RMA — ${a.id}`, sub:`${a.site||'—'} · ${a.type||'—'}`, tab:'assets', id:'c-'+a.id});
+    }
+  });
+  return alerts.filter(a => !dismissedNotifs.has(a.id));
+}
+function renderNotifBell() {
+  const alerts = buildNotifications();
+  const bell = document.getElementById('notifBell');
+  const badge = document.getElementById('notifBadge');
+  if (!bell) return;
+  if (alerts.length) {
+    bell.classList.add('has-alerts');
+    badge.style.display = 'flex';
+    badge.textContent = alerts.length > 9 ? '9+' : alerts.length;
+  } else {
+    bell.classList.remove('has-alerts');
+    badge.style.display = 'none';
+  }
+}
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const isOpen = panel.classList.contains('open');
+  if (!isOpen) renderNotifList();
+  panel.classList.toggle('open', !isOpen);
+}
+function renderNotifList() {
+  const alerts = buildNotifications();
+  const list = document.getElementById('notifList');
+  if (!alerts.length) {
+    list.innerHTML = '<div class="notif-empty">✓ All clear — no alerts</div>';
+    return;
+  }
+  const groups = {warranty: [], rma: [], condition: []};
+  alerts.forEach(a => groups[a.type].push(a));
+  const labels = {warranty:'Warranty Alerts', rma:'RMA Aging', condition:'Condition Flags'};
+  let html = '';
+  Object.entries(groups).forEach(([type, items]) => {
+    if (!items.length) return;
+    html += `<div class="notif-group-label">${labels[type]}</div>`;
+    items.forEach(a => {
+      html += `<div class="notif-item" onclick="notifClick('${a.tab}','${a.id}')">
+        <div class="notif-icon ${a.iconClass}">${a.icon}</div>
+        <div class="notif-content">
+          <div class="notif-content-title">${a.title}</div>
+          <div class="notif-content-sub">${a.sub}</div>
+        </div>
+      </div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+function notifClick(tab, id) {
+  dismissedNotifs.add(id);
+  document.getElementById('notifPanel').classList.remove('open');
+  const tabIndex = {scan:0, assets:1, rma:2, log:3, dash:4, tools:5};
+  const btn = document.querySelectorAll('.tab-btn')[tabIndex[tab]];
+  showView(tab, btn);
+  renderNotifBell();
+}
+function dismissAllNotifs() {
+  buildNotifications().forEach(a => dismissedNotifs.add(a.id));
+  document.getElementById('notifPanel').classList.remove('open');
+  renderNotifBell();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notifWrap')) {
+    document.getElementById('notifPanel')?.classList.remove('open');
+  }
 });
 
 // ── INIT ───────────────────────────────────────────────────────────────────
