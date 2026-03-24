@@ -508,33 +508,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
   <div class="table-area" style="max-height:calc(100vh - 60px)">
     <div class="table-toolbar"><h2>⚙ TOOLS</h2></div>
 
-    <!-- Backup/Restore -->
-    <div class="dash-card" style="margin-bottom:20px">
-      <div class="dash-card-title">DATA BACKUP &amp; RESTORE</div>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Export a full JSON backup of all assets, scan log, and technicians — or restore from a previous backup.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="export-btn" onclick="exportBackup()">↓ Export Full Backup (.json)</button>
-        <div style="position:relative">
-          <button class="import-btn">↑ Restore from Backup</button>
-          <input type="file" accept=".json" onchange="importBackup(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%">
-        </div>
-      </div>
-    </div>
-
-    <!-- Bulk CSV Import -->
-    <div class="dash-card" style="margin-bottom:20px">
-      <div class="dash-card-title">BULK CSV IMPORT</div>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:4px">Import assets from a CSV file. Required columns: <span style="font-family:var(--mono);font-size:11px;color:var(--cyan)">Asset ID, Equipment Type, Category, Manufacturer, Model, Serial Number, Site / Project, Building, Floor / Zone, Install Status, Condition, Notes</span></p>
-      <p style="font-size:12px;color:var(--amber);margin-bottom:16px">⚠ Existing assets with matching IDs will be updated. New IDs will be added.</p>
-      <div class="import-drop" id="importDrop">
-        <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">📂 Click or drag a CSV file here</div>
-        <input type="file" accept=".csv" onchange="importCSV(event)">
-      </div>
-      <div id="importPreview"></div>
-    </div>
-
     <!-- Label Generator -->
-    <div class="dash-card">
+    <div class="dash-card" style="margin-bottom:20px">
       <div class="dash-card-title">ASSET LABEL GENERATOR</div>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Generate printable labels for your assets. Click any label to select/deselect, then print selected.</p>
       <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
@@ -550,6 +525,31 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       </div>
       <div class="label-print-area" id="labelArea"></div>
       <div id="printArea" style="display:none"></div>
+    </div>
+
+    <!-- Bulk CSV Import -->
+    <div class="dash-card" style="margin-bottom:20px">
+      <div class="dash-card-title">BULK CSV IMPORT</div>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:4px">Import assets from a CSV file. Required columns: <span style="font-family:var(--mono);font-size:11px;color:var(--cyan)">Asset ID, Equipment Type, Category, Manufacturer, Model, Serial Number, Site / Project, Building, Floor / Zone, Install Status, Condition, Notes</span></p>
+      <p style="font-size:12px;color:var(--amber);margin-bottom:16px">⚠ Existing assets with matching IDs will be updated. New IDs will be added.</p>
+      <div class="import-drop" id="importDrop">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">📂 Click or drag a CSV file here</div>
+        <input type="file" accept=".csv" onchange="importCSV(event)">
+      </div>
+      <div id="importPreview"></div>
+    </div>
+
+    <!-- Backup/Restore -->
+    <div class="dash-card">
+      <div class="dash-card-title">DATA BACKUP &amp; RESTORE</div>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Export a full JSON backup of all assets, scan log, and technicians — or restore from a previous backup.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="export-btn" onclick="exportBackup()">↓ Export Full Backup (.json)</button>
+        <div style="position:relative">
+          <button class="import-btn">↑ Restore from Backup</button>
+          <input type="file" accept=".json" onchange="importBackup(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%">
+        </div>
+      </div>
     </div>
   </div>
 </div>
