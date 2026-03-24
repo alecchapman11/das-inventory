@@ -283,6 +283,13 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 ::-webkit-scrollbar-thumb{background:#1E6FBF;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#2E8FEF}
 *{scrollbar-width:thin;scrollbar-color:#1E6FBF #0D1B2A}
+.rma-row-warn{border-left:3px solid var(--amber)!important}
+.rma-row-crit{border-left:3px solid var(--red)!important}
+.rma-row-warn td:first-child{padding-left:9px}
+.rma-row-crit td:first-child{padding-left:9px}
+.escalation-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em}
+.escalation-warn{background:rgba(245,166,35,0.15);color:var(--amber);border:1px solid rgba(245,166,35,0.4)}
+.escalation-crit{background:rgba(229,83,75,0.2);color:var(--red);border:1px solid rgba(229,83,75,0.5)}
 .notif-bell{position:relative;cursor:pointer;padding:6px 8px;border-radius:6px;transition:background 0.15s;display:flex;align-items:center;justify-content:center}
 .notif-bell:hover{background:rgba(255,255,255,0.06)}
 .notif-bell svg{width:18px;height:18px;stroke:var(--slate);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.15s}
@@ -1225,10 +1232,15 @@ function renderRMA() {
     list.forEach(a=>{
       const days=a.rmaOpenDate?Math.floor((new Date()-new Date(a.rmaOpenDate))/86400000):null;
       const cls=days!==null?(days>60?'pill-aged-crit':days>30?'pill-aged-warn':'pill-aged-ok'):'';
-      h+=`<tr${showClose?'':' class="row-rma"'}>
-        <td><div class="action-btns">
+      const escalClass=days!==null?(days>=60?'rma-row-crit':days>=30?'rma-row-warn':''):'';
+      const escalBadge=days!==null&&days>=60?`<span class="escalation-badge escalation-crit">🔴 CRITICAL ${days}d</span>`:days!==null&&days>=30?`<span class="escalation-badge escalation-warn">⚠ ESCALATE ${days}d</span>`:'';
+      h+=`<tr class="${showClose?'':' row-rma'} ${escalClass}">
+        <td><div class="action-btns" style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+          ${escalBadge}
+          <div style="display:flex;gap:4px">
           <button class="btn-sm btn-edit" onclick="openEdit('${a.id}')">✎ Edit</button>
           ${!showClose?`<button class="btn-sm" style="color:var(--green);border-color:rgba(15,168,110,0.3)" onclick="closeRMA('${a.id}')">✓ Close</button>`:''}
+          </div>
         </div></td>
         <td class="asset-id">${a.id}</td><td>${a.type||'—'}</td><td>${a.mfr||'—'}</td><td>${a.model||'—'}</td>
         <td style="font-family:var(--mono);font-size:11px">${a.serial||'—'}</td>
