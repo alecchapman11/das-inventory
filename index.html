@@ -6,6 +6,7 @@
 <title>Cleveland Electric – DAS Inventory Management</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--navy:#0D1B2A;--navy-mid:#1B2D42;--navy-light:#243850;--blue:#1E6FBF;--blue-bright:#2E8FEF;--cyan:#00C2D4;--green:#0FA86E;--amber:#F5A623;--red:#E5534B;--slate:#8FA3BC;--border:rgba(255,255,255,0.08);--text:#D8E6F3;--text-dim:#6B8499;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -615,6 +616,10 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 <div id="toast">✓ Asset logged</div>
 
 <script>
+const SUPABASE_URL = 'https://eofionpjpamphyioznxf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_v3Bq9YMPL5QeU42bQKb6IQ_AfymazQD';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ── STATE ──────────────────────────────────────────────────────────────────
 let assets   = JSON.parse(localStorage.getItem('das_assets') || '[]');
 let scanLog  = JSON.parse(localStorage.getItem('das_log')    || '[]');
@@ -645,11 +650,22 @@ if (!assets.length) {
   save();
 }
 
-function save() {
-  localStorage.setItem('das_assets',  JSON.stringify(assets));
-  localStorage.setItem('das_log',     JSON.stringify(scanLog));
-  localStorage.setItem('das_techs',   JSON.stringify(techs));
+async function save() {
+  localStorage.setItem('das_assets', JSON.stringify(assets));
+  localStorage.setItem('das_log', JSON.stringify(scanLog));
+  localStorage.setItem('das_techs', JSON.stringify(techs));
   localStorage.setItem('das_history', JSON.stringify(assetHistory));
+  try {
+    await db.from('assets').upsert(assets.map(a => ({
+      id:a.id, type:a.type, category:a.category, mfr:a.mfr, model:a.model,
+      serial:a.serial, site:a.site, building:a.building, zone:a.zone,
+      status:a.status, condition:a.condition, rma:a.rma, warranty:a.warranty,
+      datein:a.datein, dateout:a.dateout, dateinstalled:a.dateinstalled,
+      notes:a.notes, photos:a.photos, date:a.date, tech:a.tech,
+      rma_open_date:a.rmaOpenDate, rma_close_date:a.rmaCloseDate
+    })));
+    await db.from('technicians').upsert(techs.map(t => ({name:t.name, pin:t.pin})), {onConflict:'name'});
+  } catch(e) { console.warn('Supabase sync error:', e); }
 }
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────
@@ -666,15 +682,33 @@ function populateTechSelect() {
     sel.appendChild(o);
   });
 }
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('loginTech').value;
-  const pin  = document.getElementById('loginPin').value;
-  const tech = techs.find(t => t.name===name && t.pin===pin);
+  const pin = document.getElementById('loginPin').value;
+  let tech = techs.find(t => t.name===name && t.pin===pin);
+  if (!tech) {
+    try {
+      const {data} = await db.from('technicians').select('*').eq('name',name).eq('pin',pin).single();
+      if (data) tech = data;
+    } catch(e) {}
+  }
   if (!tech) { document.getElementById('loginErr').style.display='block'; return; }
-  currentTech = tech.name;
-  document.getElementById('loginScreen').style.display  = 'none';
-  document.getElementById('appHeader').style.display    = 'flex';
-  document.getElementById('appMain').style.display      = 'block';
+  currentTech = name;
+  try {
+    const {data:remoteAssets} = await db.from('assets').select('*');
+    if (remoteAssets && remoteAssets.length) {
+      assets = remoteAssets.map(a => ({...a, rmaOpenDate:a.rma_open_date, rmaCloseDate:a.rma_close_date}));
+      localStorage.setItem('das_assets', JSON.stringify(assets));
+    }
+    const {data:remoteTechs} = await db.from('technicians').select('*');
+    if (remoteTechs && remoteTechs.length) {
+      techs = remoteTechs;
+      localStorage.setItem('das_techs', JSON.stringify(techs));
+    }
+  } catch(e) { console.warn('Could not load from Supabase, using localStorage:', e); }
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appHeader').style.display = 'flex';
+  document.getElementById('appMain').style.display = 'block';
   document.getElementById('headerTechName').textContent = currentTech;
   document.getElementById('loginPin').value = '';
   document.getElementById('loginErr').style.display = 'none';
