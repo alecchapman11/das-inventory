@@ -791,14 +791,16 @@ async function save() {
       rma_open_date:a.rmaOpenDate, rma_close_date:a.rmaCloseDate
     })));
     await db.from('technicians').upsert(techs.map(t => ({name:t.name, pin:t.pin})), {onConflict:'name'});
-    if (scanLog.length) {
-      await db.from('scan_log').upsert(scanLog.map((s,i) => ({
+    const logRows = scanLog.map(s => ({
         id: s.supabaseId || undefined,
         asset_id:s.assetId, date:s.date, tech:s.tech, site:s.site,
         location:s.location, action:s.action, scan_type:s.scanType,
         datein:s.datein, dateout:s.dateout, status:s.status, notes:s.notes
-      })).filter(s => s.asset_id), {onConflict:'id', ignoreDuplicates:true});
-    }
+      })).filter(s => s.asset_id);
+    const newLogRows = logRows.filter(r => !r.id);
+    const existingLogRows = logRows.filter(r => r.id);
+    if (newLogRows.length) await db.from('scan_log').insert(newLogRows);
+    if (existingLogRows.length) await db.from('scan_log').upsert(existingLogRows, {onConflict:'id'});
     const historyRows = [];
     Object.entries(assetHistory).forEach(([assetId, entries]) => {
       entries.forEach(h => {
@@ -809,8 +811,13 @@ async function save() {
         });
       });
     });
-    if (historyRows.length) {
-      await db.from('asset_history').upsert(historyRows, {onConflict:'id', ignoreDuplicates:true});
+    const newHistoryRows = historyRows.filter(r => !r.id);
+    const existingHistoryRows = historyRows.filter(r => r.id);
+    if (newHistoryRows.length) {
+      await db.from('asset_history').insert(newHistoryRows);
+    }
+    if (existingHistoryRows.length) {
+      await db.from('asset_history').upsert(existingHistoryRows, {onConflict:'id'});
     }
   } catch(e) { console.warn('Supabase sync error:', e); }
 }
