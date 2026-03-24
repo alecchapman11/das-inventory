@@ -102,9 +102,10 @@ textarea{resize:vertical;min-height:56px}
 .count-green{background:rgba(15,168,110,0.15);color:#0FA86E;border:1px solid rgba(15,168,110,0.3)}
 .search-box{background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:7px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:200px}
 .search-box:focus{border-color:var(--blue)}
-.filter-select-wrap{position:relative;display:inline-block}
-.filter-select-wrap::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:9px;height:5px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238FA3BC' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat center;background-size:9px 5px;pointer-events:none}
-.filter-select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:7px 28px 7px 10px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;cursor:pointer;transition:border-color 0.15s}
+.filter-select-wrap{position:relative;display:inline-block;min-width:160px}
+.filter-select-wrap.full-width{display:block;width:100%}
+.filter-select-wrap::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:9px;height:5px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238FA3BC' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat center;background-size:9px 5px;pointer-events:none;z-index:2}
+.filter-select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:7px 28px 7px 10px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;cursor:pointer;transition:border-color 0.15s;width:100%}
 .filter-select:focus{border-color:var(--blue)}
 .filter-select option{background:var(--navy-mid);color:var(--text)}
 table{width:100%;border-collapse:collapse;font-size:12px}
@@ -401,7 +402,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
         <h2>ASSET REGISTER</h2>
         <span class="count-badge" id="assetCount">0 assets</span>
         <input class="search-box" type="text" id="searchBox" placeholder="Search assets…" oninput="renderAssets(this.value)">
-        <div class="filter-select-wrap"><select class="filter-select" id="siteFilter" onchange="renderAssets(document.getElementById('searchBox').value)">
+        <div class="filter-select-wrap full-width"><select class="filter-select" id="siteFilter" onchange="renderAssets(document.getElementById('searchBox').value)">
           <option value="">All Sites</option>
         </select></div>
         <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
@@ -418,7 +419,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       <h2>FULL ASSET REGISTER</h2>
       <span class="count-badge" id="assetCount2">0 assets</span>
       <input class="search-box" type="text" id="searchBox2" placeholder="Search…" oninput="renderAssetsFull(this.value)">
-      <div class="filter-select-wrap"><select class="filter-select" id="siteFilter2" onchange="renderAssetsFull(document.getElementById('searchBox2').value)">
+      <div class="filter-select-wrap full-width"><select class="filter-select" id="siteFilter2" onchange="renderAssetsFull(document.getElementById('searchBox2').value)">
         <option value="">All Sites</option>
       </select></div>
       <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
