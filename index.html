@@ -694,6 +694,27 @@ async function save() {
       rma_open_date:a.rmaOpenDate, rma_close_date:a.rmaCloseDate
     })));
     await db.from('technicians').upsert(techs.map(t => ({name:t.name, pin:t.pin})), {onConflict:'name'});
+    if (scanLog.length) {
+      await db.from('scan_log').upsert(scanLog.map((s,i) => ({
+        id: s.supabaseId || undefined,
+        asset_id:s.assetId, date:s.date, tech:s.tech, site:s.site,
+        location:s.location, action:s.action, scan_type:s.scanType,
+        datein:s.datein, dateout:s.dateout, status:s.status, notes:s.notes
+      })).filter(s => s.asset_id), {onConflict:'id', ignoreDuplicates:true});
+    }
+    const historyRows = [];
+    Object.entries(assetHistory).forEach(([assetId, entries]) => {
+      entries.forEach(h => {
+        historyRows.push({
+          id: h.supabaseId || undefined,
+          asset_id:assetId, date:h.date, tech:h.tech,
+          action:h.action, snapshot:h.snapshot
+        });
+      });
+    });
+    if (historyRows.length) {
+      await db.from('asset_history').upsert(historyRows, {onConflict:'id', ignoreDuplicates:true});
+    }
   } catch(e) { console.warn('Supabase sync error:', e); }
 }
 
@@ -733,6 +754,22 @@ async function doLogin() {
     if (remoteTechs && remoteTechs.length) {
       techs = remoteTechs;
       localStorage.setItem('das_techs', JSON.stringify(techs));
+    }
+    const {data:remoteLog} = await db.from('scan_log').select('*').order('date', {ascending:false});
+    if (remoteLog && remoteLog.length) {
+      scanLog = remoteLog.map(s => ({
+        ...s, assetId:s.asset_id, scanType:s.scan_type, supabaseId:s.id
+      }));
+      localStorage.setItem('das_log', JSON.stringify(scanLog));
+    }
+    const {data:remoteHistory} = await db.from('asset_history').select('*');
+    if (remoteHistory && remoteHistory.length) {
+      assetHistory = {};
+      remoteHistory.forEach(h => {
+        if (!assetHistory[h.asset_id]) assetHistory[h.asset_id] = [];
+        assetHistory[h.asset_id].push({...h, supabaseId:h.id});
+      });
+      localStorage.setItem('das_history', JSON.stringify(assetHistory));
     }
   } catch(e) { console.warn('Could not load from Supabase, using localStorage:', e); }
   document.getElementById('loginScreen').style.display = 'none';
@@ -917,12 +954,13 @@ function logAsset() {
     snapshot:{status:entry.status,condition:entry.condition,rma:entry.rma,zone:entry.zone,notes:entry.notes}
   });
   if (idx>=0) assets[idx]=entry; else assets.push(entry);
-  scanLog.unshift({
+  const newScanEntry = {
     assetId:id,date:new Date().toLocaleString(),tech:currentTech,
     site:entry.site,location:entry.building+' / '+entry.zone,
     action:scanType==='in'?(idx>=0?'Scan In – Update':'Initial Scan In'):'Scan Out',
     scanType,datein:entry.datein,dateout:entry.dateout,status:entry.status,notes:entry.notes
-  });
+  };
+  scanLog.unshift(newScanEntry);
   save(); populateSiteFilters(); checkWarrantyBanner();
   clearForm(); renderAssets(document.getElementById('searchBox').value||'');
   toast(idx>=0?'✓ Asset '+id+' updated':'✓ Asset '+id+' logged');
