@@ -102,8 +102,9 @@ textarea{resize:vertical;min-height:56px}
 .count-green{background:rgba(15,168,110,0.15);color:#0FA86E;border:1px solid rgba(15,168,110,0.3)}
 .search-box{background:var(--navy-mid);border:1px solid var(--border);border-radius:5px;padding:7px 12px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;width:200px}
 .search-box:focus{border-color:var(--blue)}
-.filter-select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:var(--navy-mid) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238FA3BC' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 8px center;background-size:9px 5px;border:1px solid var(--border);border-radius:5px;padding:7px 28px 7px 10px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;cursor:pointer}
+.filter-select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:var(--navy-mid) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238FA3BC' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 8px center;background-size:9px 5px;border:1px solid var(--border);border-radius:5px;padding:7px 28px 7px 10px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;cursor:pointer;transition:border-color 0.15s,background-color 0.15s;-webkit-transition:border-color 0.15s,background-color 0.15s}
 .filter-select:focus{border-color:var(--blue)}
+.filter-select option{background:var(--navy-mid);color:var(--text)}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--navy);z-index:2}
 td{padding:6px 12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;color:var(--text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -949,6 +950,7 @@ function tableHTML(rows,full) {
       if (c==='rma')       return`<td>${rmaPill(a[c])}</td>`;
       if (c==='notes')     return noteCell(a[c]);
       if (c==='warranty'&&a[c]){const d=Math.round((new Date(a[c])-new Date())/86400000);const cls=d<0?'pill-rma':d<90?'pill-fair':'pill-good';return`<td><span class="pill ${cls}">${a[c]}</span></td>`;}
+      if(c==='tech') return`<td style="color:var(--blue-bright);font-family:var(--mono);font-size:11px;font-weight:600">${a[c]||'—'}</td>`;
       return`<td title="${(a[c]||'').toString().replace(/"/g,'&quot;')}">${a[c]||'—'}</td>`;
     }).join('')}</tr>`;
   });
