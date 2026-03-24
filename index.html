@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 :root{--navy:#0D1B2A;--navy-mid:#1B2D42;--navy-light:#243850;--blue:#1E6FBF;--blue-bright:#2E8FEF;--cyan:#00C2D4;--green:#0FA86E;--amber:#F5A623;--red:#E5534B;--slate:#8FA3BC;--border:rgba(255,255,255,0.08);--text:#D8E6F3;--text-dim:#6B8499;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1166,29 +1167,45 @@ function renderLabels() {
       <div class="label-site">${a.site||'—'} / ${a.zone||'—'}</div>
       <div class="label-detail">${a.mfr||''} ${a.model||''}</div>
       <div class="label-detail">S/N: ${a.serial||'—'}</div>
-      <div class="label-barcode">|||||||||||</div>
-      <div style="font-size:9px;text-align:center;color:#999;font-family:monospace">${a.id}</div>
+      <svg class="barcode-svg" id="barcode-${a.id}"></svg>
     </div>`).join('');
+  list.forEach(a=>{
+    try {
+      JsBarcode('#barcode-'+a.id, a.id, {
+        format:'CODE128', width:1.5, height:40, displayValue:true,
+        fontSize:10, margin:4, background:'#ffffff', lineColor:'#000000'
+      });
+    } catch(e) { console.warn('Barcode error for '+a.id, e); }
+  });
 }
 function toggleLabel(id){if(selectedLabels.has(id))selectedLabels.delete(id);else selectedLabels.add(id);renderLabels();}
 function selectAllLabels(){const siteFilter=document.getElementById('labelSiteFilter')?.value||'';const list=siteFilter?assets.filter(a=>a.site===siteFilter):assets;list.forEach(a=>selectedLabels.add(a.id));renderLabels();}
 function openLabelModal(id){selectedLabels.clear();selectedLabels.add(id);showView('tools',document.querySelectorAll('.tab-btn')[5]);renderLabels();}
-function printLabels(){
+function printLabels() {
   if(!selectedLabels.size){toast('⚠ Select at least one label to print','#F5A623');return;}
-  const printArea=document.getElementById('printArea');
   const list=assets.filter(a=>selectedLabels.has(a.id));
-  printArea.innerHTML=list.map(a=>`
-    <div class="asset-label" style="page-break-inside:avoid;margin:8px">
+  const printWindow=window.open('','_blank','width=800,height=600');
+  const labelsHTML=list.map(a=>{
+    const canvas=document.createElement('canvas');
+    JsBarcode(canvas, a.id, {format:'CODE128',width:1.5,height:40,displayValue:true,fontSize:10,margin:4,background:'#ffffff',lineColor:'#000000'});
+    return `<div class="asset-label">
       <div class="label-id">${a.id}</div>
       <div class="label-site">${a.site||'—'} / ${a.zone||'—'}</div>
       <div class="label-detail">${a.mfr||''} ${a.model||''}</div>
       <div class="label-detail">S/N: ${a.serial||'—'}</div>
-      <div class="label-barcode">|||||||||||</div>
-      <div style="font-size:9px;text-align:center;color:#999;font-family:monospace">${a.id}</div>
-    </div>`).join('');
-  printArea.style.display='flex';
-  window.print();
-  setTimeout(()=>printArea.style.display='none',1000);
+      <img src="${canvas.toDataURL()}" style="width:100%;margin-top:6px">
+    </div>`;
+  }).join('');
+  printWindow.document.write(`<!DOCTYPE html><html><head><title>Asset Labels</title>
+    <style>
+      body{font-family:'IBM Plex Mono',monospace;padding:16px}
+      .asset-label{width:280px;border:2px solid #1B2A4A;border-radius:6px;padding:12px;margin:8px;display:inline-block;page-break-inside:avoid;vertical-align:top}
+      .label-id{font-size:16px;font-weight:700;color:#1B2A4A;margin-bottom:4px}
+      .label-site{font-size:10px;color:#444;margin-bottom:2px}
+      .label-detail{font-size:10px;color:#666}
+      @media print{body{padding:0} .asset-label{margin:4px}}
+    </style></head><body>${labelsHTML}<script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+  printWindow.document.close();
 }
 
 // ── BACKUP / RESTORE ───────────────────────────────────────────────────────
