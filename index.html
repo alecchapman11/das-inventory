@@ -1161,8 +1161,8 @@ function renderAssets(q) {
 function renderAssetsFull(q) {
   const f=filterAssets(q,'siteFilter2');
   document.getElementById('assetCount2').textContent=f.length+' asset'+(f.length!==1?'s':'');
-  document.getElementById('assetTableFull').innerHTML='<div class="table-scroll-wrap">'+tableHTML(f,true)+'</div>';
-  setTimeout(fitAssetTable, 50);
+  document.getElementById('assetTableFull').innerHTML='<div class="table-scroll-wrap" style="visibility:hidden">'+tableHTML(f,true)+'</div>';
+  requestAnimationFrame(() => requestAnimationFrame(fitAssetTable));
 }
 
 function tableHTML(rows,full) {
@@ -1722,8 +1722,7 @@ function fitAssetTable() {
   const wrap = document.querySelector('#view-assets .table-scroll-wrap');
   if (!wrap) return;
   const toolbar = document.querySelector('#view-assets .table-toolbar');
-  const tableArea = document.querySelector('#view-assets .table-area');
-  if (!toolbar || !tableArea) return;
+  if (!toolbar) return;
   const header = document.querySelector('header');
   const banner = document.getElementById('warrantyBanner');
   const headerH = header ? header.offsetHeight : 60;
@@ -1733,6 +1732,7 @@ function fitAssetTable() {
   const available = window.innerHeight - headerH - bannerH - toolbarH - padding;
   wrap.style.height = Math.max(available, 200) + 'px';
   wrap.style.overflowY = 'auto';
+  wrap.style.visibility = 'visible';
 }
 window.addEventListener('resize', fitAssetTable);
 
