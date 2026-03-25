@@ -846,10 +846,8 @@ async function save() {
       });
     });
     const newHistoryRows = historyRows.filter(r => !r.id).map(r => ({asset_id:r.asset_id, date:r.date, tech:r.tech, action:r.action, snapshot:{...r.snapshot, diff:r.diff||null, before:r.before||null, after:r.after||null}}));
+    if (newHistoryRows.length) { const {data:inserted} = await db.from('asset_history').insert(newHistoryRows).select('id,asset_id,date'); if(inserted){inserted.forEach(row=>{const entry=assetHistory[row.asset_id]?.find(h=>h.date===row.date&&!h.supabaseId);if(entry)entry.supabaseId=row.id;});localStorage.setItem('das_history',JSON.stringify(assetHistory));} }
     const existingHistoryRows = historyRows.filter(r => r.id);
-    if (newHistoryRows.length) {
-      await db.from('asset_history').insert(newHistoryRows);
-    }
     if (existingHistoryRows.length) {
       await db.from('asset_history').upsert(existingHistoryRows, {onConflict:'id'});
     }
