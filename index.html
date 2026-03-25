@@ -532,9 +532,13 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
     <div class="table-toolbar">
       <h2>SCAN LOG</h2>
       <span class="count-badge" id="logCount">0 scans</span>
-      <div class="filter-select-wrap"><select class="filter-select" id="logTechFilter" onchange="renderLog()">
-        <option value="">All Technicians</option>
-      </select></div>
+      <div class="custom-select" id="customLogTechFilter" style="min-width:200px">
+        <div class="custom-select-trigger" onclick="toggleCustomSelect('customLogTechFilter')">
+          <span class="custom-select-value">All Technicians</span>
+          <div class="custom-select-arrow"></div>
+        </div>
+        <div class="custom-select-dropdown" id="customLogTechFilterDropdown"></div>
+      </div>
       <button class="export-btn" onclick="exportLogCSV()">↓ CSV</button>
     </div>
     <div id="logTableWrap"></div>
@@ -986,9 +990,14 @@ function populateSiteFilters() {
   buildCustomOptions('customLabelSiteFilter', "renderLabels()");
 }
 function populateLogTechFilter() {
-  const el = document.getElementById('logTechFilter'); if (!el) return;
-  el.innerHTML = '<option value="">All Technicians</option>';
-  techs.forEach(t => { const o=document.createElement('option'); o.value=t.name; o.textContent=t.name; el.appendChild(o); });
+  const wrap = document.getElementById('customLogTechFilter');
+  if (!wrap) return;
+  const dropdown = wrap.querySelector('.custom-select-dropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = [
+    `<div class="custom-select-option selected" data-value="" onclick="setCustomSelectValue('customLogTechFilter','','All Technicians');toggleCustomSelect('customLogTechFilter');renderLog()">All Technicians</div>`,
+    ...techs.map(t => `<div class="custom-select-option" data-value="${t.name}" onclick="setCustomSelectValue('customLogTechFilter','${t.name.replace(/'/g,"\\'")}','${t.name.replace(/'/g,"\\'")}');toggleCustomSelect('customLogTechFilter');renderLog()">${t.name}</div>`)
+  ].join('');
 }
 
 // ── VIEWS ──────────────────────────────────────────────────────────────────
@@ -1327,7 +1336,7 @@ async function closeRMA(id) {
 
 // ── SCAN LOG ───────────────────────────────────────────────────────────────
 function renderLog() {
-  const techFilter=document.getElementById('logTechFilter')?.value||'';
+  const techFilter=getCustomSelectValue('customLogTechFilter')||'';
   const filtered=techFilter?scanLog.filter(s=>s.tech===techFilter):scanLog;
   document.getElementById('logCount').textContent=filtered.length+' scan'+(filtered.length!==1?'s':'');
   if (!filtered.length){document.getElementById('logTableWrap').innerHTML=`<div class="empty-state"><div class="icon">◎</div>No scans yet</div>`;return;}
