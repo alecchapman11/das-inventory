@@ -835,7 +835,7 @@ async function save() {
         historyRows.push({
           id: h.supabaseId || undefined,
           asset_id:assetId, date:h.date, tech:h.tech,
-          action:h.action, snapshot:h.snapshot
+          action:h.action, snapshot:{...(h.snapshot||{}), diff:h.diff||null, before:h.before||null, after:h.after||null}
         });
       });
     });
