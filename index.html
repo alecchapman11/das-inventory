@@ -1050,7 +1050,7 @@ function removePhoto(i){currentPhotos.splice(i,1);renderPhotoPreview();}
 function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');}
 
 // ── LOG ASSET ──────────────────────────────────────────────────────────────
-function logAsset() {
+async function logAsset() {
   const id=document.getElementById('barcodeInput').value.trim();
   if (!id) { toast('⚠ Enter or scan a barcode ID first','#F5A623'); return; }
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
@@ -1083,7 +1083,7 @@ function logAsset() {
     scanType,datein:entry.datein,dateout:entry.dateout,status:entry.status,notes:entry.notes
   };
   scanLog.unshift(newScanEntry);
-  save(); populateSiteFilters(); checkWarrantyBanner();
+  await save(); populateSiteFilters(); checkWarrantyBanner();
   clearForm(); renderAssets(document.getElementById('searchBox').value||'');
   toast(idx>=0?'✓ Asset '+id+' updated':'✓ Asset '+id+' logged');
 }
@@ -1193,21 +1193,21 @@ function openEdit(id) {
   set('edit-dateinstalled',a.dateinstalled);set('edit-datein',a.datein);set('edit-notes',a.notes);
   openModal('editModal');
 }
-function saveEdit() {
+async function saveEdit() {
   const orig=document.getElementById('edit-id-orig').value;
   const idx=assets.findIndex(a=>a.id===orig); if (idx<0) return;
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const updated={...assets[idx],id:g('edit-id'),type:g('edit-type'),category:g('edit-category'),mfr:g('edit-mfr'),model:g('edit-model'),serial:g('edit-serial'),site:g('edit-site'),building:g('edit-building'),zone:g('edit-zone'),status:g('edit-status'),condition:g('edit-condition'),rma:g('edit-rma'),warranty:g('edit-warranty'),dateinstalled:g('edit-dateinstalled'),datein:g('edit-datein'),notes:g('edit-notes')};
   if (!assetHistory[orig]) assetHistory[orig]=[];
   assetHistory[orig].unshift({date:new Date().toLocaleString(),tech:currentTech,action:'Edited via modal',snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes}});
-  assets[idx]=updated; save(); closeModal('editModal');
+  assets[idx]=updated; await save(); closeModal('editModal');
   renderAssets(''); renderAssetsFull(''); checkWarrantyBanner(); populateSiteFilters();
   toast('✓ Asset updated');
 }
 
 // ── DELETE ─────────────────────────────────────────────────────────────────
 function openDelete(id){pendingDeleteId=id;document.getElementById('deleteAssetId').textContent=id;openModal('deleteModal');}
-function confirmDelete(){assets=assets.filter(a=>a.id!==pendingDeleteId);save();closeModal('deleteModal');renderAssets('');toast('✓ Deleted '+pendingDeleteId,'#E5534B');pendingDeleteId=null;}
+async function confirmDelete(){assets=assets.filter(a=>a.id!==pendingDeleteId);await save();closeModal('deleteModal');renderAssets('');toast('✓ Deleted '+pendingDeleteId,'#E5534B');pendingDeleteId=null;}
 
 // ── PHOTOS ─────────────────────────────────────────────────────────────────
 function openPhotos(id){
@@ -1302,12 +1302,12 @@ function renderRMA() {
   document.getElementById('rmaOpenWrap').innerHTML=rmaTable(openRma,false);
   document.getElementById('rmaClosedWrap').innerHTML=rmaTable(closedRma,true);
 }
-function closeRMA(id) {
+async function closeRMA(id) {
   const a=assets.find(x=>x.id===id); if (!a) return;
   a.rma='Closed'; a.rmaCloseDate=today();
   if (!assetHistory[id]) assetHistory[id]=[];
   assetHistory[id].unshift({date:new Date().toLocaleString(),tech:currentTech,action:'RMA Closed',snapshot:{status:a.status,condition:a.condition,rma:'Closed',notes:a.notes}});
-  save(); renderRMA(); toast('✓ RMA closed for '+id,'var(--green)');
+  await save(); renderRMA(); toast('✓ RMA closed for '+id,'var(--green)');
 }
 
 // ── SCAN LOG ───────────────────────────────────────────────────────────────
@@ -1634,7 +1634,7 @@ function openTransfer(id) {
   document.getElementById('transfer-site-list').innerHTML = sites.map(s => `<option value="${s}">`).join('');
   openModal('transferModal');
 }
-function confirmTransfer() {
+async function confirmTransfer() {
   const id = document.getElementById('transfer-asset-id').value;
   const newSite = document.getElementById('transfer-site').value.trim();
   const newBuilding = document.getElementById('transfer-building').value.trim();
@@ -1661,7 +1661,7 @@ function confirmTransfer() {
       notes: `Transferred from ${oldSite} (${oldBuilding} / ${oldZone}) → ${newSite} (${newBuilding} / ${newZone})${reason ? ' — ' + reason : ''}`
     }
   });
-  save();
+  await save();
   closeModal('transferModal');
   populateSiteFilters();
   renderAssets('');
