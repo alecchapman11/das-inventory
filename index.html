@@ -355,6 +355,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .activity-meta{font-size:10px;font-family:var(--mono);color:var(--slate);margin-top:3px}
 .activity-empty{text-align:center;padding:24px;color:var(--text-dim);font-size:13px}
 .notif-since-wrap{background:rgba(0,194,212,0.06);border-bottom:1px solid rgba(0,194,212,0.15)}
+.notif-checking{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,194,212,0.04);border-bottom:1px solid rgba(0,194,212,0.1);font-family:var(--mono);font-size:11px;color:var(--slate)}
+.notif-checking-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blink 1s infinite}
 .notif-since-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
 .notif-since-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:0.08em}
 .notif-since-dismiss{font-size:11px;color:var(--text-dim);background:none;border:none;cursor:pointer;font-family:var(--sans)}
@@ -1768,7 +1770,19 @@ function toggleNotifPanel() {
   const isOpen = panel.classList.contains('open');
   if (!isOpen) {
     renderNotifList();
-    renderSinceLastVisit(window._prevLogin);
+    if (window._prevLogin) {
+      const list = document.getElementById('notifList');
+      if (list) {
+        const checking = document.createElement('div');
+        checking.id = 'notifChecking';
+        checking.className = 'notif-checking';
+        checking.innerHTML = '<div class="notif-checking-dot"></div>Checking for updates since your last visit...';
+        list.parentNode.insertBefore(checking, list);
+      }
+      renderSinceLastVisit(window._prevLogin).then(() => {
+        document.getElementById('notifChecking')?.remove();
+      });
+    }
   }
   panel.classList.toggle('open', !isOpen);
 }
@@ -1996,6 +2010,7 @@ async function buildSinceLastVisit(prevLogin) {
 }
 async function renderSinceLastVisit(prevLogin) {
   const since = await buildSinceLastVisit(prevLogin);
+  document.getElementById('notifChecking')?.remove();
   const existing = document.getElementById('sinceLastVisit');
   if (existing) existing.remove();
   if (!since) return;
