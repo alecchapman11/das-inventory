@@ -940,10 +940,10 @@ async function doLogin() {
   document.getElementById('loginErr').style.display = 'none';
   setTodayDates(); populateSiteFilters(); populateLogTechFilter();
   checkWarrantyBanner(); renderAssets('');
-  saveLastLogin();
+  const prevLogin = localStorage.getItem(getLastLoginKey());
   renderNotifBell();
   setTimeout(async () => {
-    const since = await buildSinceLastVisit();
+    const since = await buildSinceLastVisit(prevLogin);
     if (since) {
       const bell = document.getElementById('notifBell');
       const badge = document.getElementById('notifBadge');
@@ -951,9 +951,11 @@ async function doLogin() {
       if (badge) {
         const current = parseInt(badge.textContent)||0;
         badge.style.display='flex';
-        badge.textContent = current + since.count > 9 ? '9+' : (current + since.count);
+        badge.textContent = (current + since.count) > 9 ? '9+' : (current + since.count);
       }
     }
+    window._prevLogin = prevLogin;
+    saveLastLogin();
   }, 1000);
 }
 document.getElementById('loginPin').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -1766,7 +1768,7 @@ function toggleNotifPanel() {
   const isOpen = panel.classList.contains('open');
   if (!isOpen) {
     renderNotifList();
-    renderSinceLastVisit();
+    renderSinceLastVisit(window._prevLogin);
   }
   panel.classList.toggle('open', !isOpen);
 }
@@ -1974,9 +1976,9 @@ document.addEventListener('click', e => {
 // ── SINCE LAST VISIT ───────────────────────────────────────────────────────
 function getLastLoginKey() { return 'das_last_login_' + (currentTech||'').replace(/\s/g,'_'); }
 function saveLastLogin() { localStorage.setItem(getLastLoginKey(), new Date().toISOString()); }
-async function buildSinceLastVisit() {
+async function buildSinceLastVisit(prevLogin) {
   try {
-    const lastLogin = localStorage.getItem(getLastLoginKey());
+    const lastLogin = prevLogin || localStorage.getItem(getLastLoginKey());
     if (!lastLogin) return null;
     const {data} = await db.from('notifications')
       .select('action, tech, asset_id, created_at')
@@ -1991,8 +1993,8 @@ async function buildSinceLastVisit() {
     return {count: data.length, summary, lastDate, items: data.slice(0,5)};
   } catch(e) { return null; }
 }
-async function renderSinceLastVisit() {
-  const since = await buildSinceLastVisit();
+async function renderSinceLastVisit(prevLogin) {
+  const since = await buildSinceLastVisit(prevLogin);
   const existing = document.getElementById('sinceLastVisit');
   if (existing) existing.remove();
   if (!since) return;
