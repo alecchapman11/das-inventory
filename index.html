@@ -1978,20 +1978,21 @@ function getLastLoginKey() { return 'das_last_login_' + (currentTech||'').replac
 function saveLastLogin() { localStorage.setItem(getLastLoginKey(), new Date().toISOString()); }
 async function buildSinceLastVisit(prevLogin) {
   try {
-    const lastLogin = prevLogin || localStorage.getItem(getLastLoginKey());
+    const lastLogin = prevLogin;
     if (!lastLogin) return null;
+    const tech = currentTech;
     const {data} = await db.from('notifications')
       .select('action, tech, asset_id, created_at')
       .gt('created_at', lastLogin)
-      .neq('tech', currentTech)
+      .neq('tech', tech || '')
       .order('created_at', {ascending:false});
     if (!data || !data.length) return null;
     const counts = {};
     data.forEach(n => { counts[n.action] = (counts[n.action]||0)+1; });
-    const summary = Object.entries(counts).map(([action, count]) => `${count} ${action}`).join(' · ');
+    const summary = Object.entries(counts).map(([action, count]) => `${count}× ${action}`).join(' · ');
     const lastDate = new Date(lastLogin).toLocaleDateString('en-US', {month:'short', day:'numeric'});
     return {count: data.length, summary, lastDate, items: data.slice(0,5)};
-  } catch(e) { return null; }
+  } catch(e) { console.warn('Since last visit error:', e); return null; }
 }
 async function renderSinceLastVisit(prevLogin) {
   const since = await buildSinceLastVisit(prevLogin);
