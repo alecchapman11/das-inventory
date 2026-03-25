@@ -283,10 +283,6 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 ::-webkit-scrollbar-thumb{background:#1E6FBF;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#2E8FEF}
 *{scrollbar-width:thin;scrollbar-color:#1E6FBF #0D1B2A}
-#view-assets .table-area{display:flex;flex-direction:column;height:calc(100vh - 60px);padding-bottom:0;flex:1 1 auto}
-#view-assets .table-toolbar{flex-shrink:0;padding-bottom:18px}
-#view-assets .table-scroll-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:auto}
-#view-assets .table-scroll-wrap table{min-width:1400px}
 .rma-row-warn{border-left:3px solid var(--amber)!important}
 .rma-row-crit{border-left:3px solid var(--red)!important}
 .rma-row-warn td:first-child{padding-left:9px}
@@ -1013,7 +1009,7 @@ function showView(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (name==='assets') { populateSiteFilters(); renderAssetsFull(''); }
+  if (name==='assets') { populateSiteFilters(); renderAssetsFull(''); setTimeout(fitAssetTable, 50); }
   if (name==='rma')    renderRMA();
   if (name==='log')    renderLog();
   if (name==='dash')   renderDash();
@@ -1166,6 +1162,7 @@ function renderAssetsFull(q) {
   const f=filterAssets(q,'siteFilter2');
   document.getElementById('assetCount2').textContent=f.length+' asset'+(f.length!==1?'s':'');
   document.getElementById('assetTableFull').innerHTML='<div class="table-scroll-wrap">'+tableHTML(f,true)+'</div>';
+  setTimeout(fitAssetTable, 50);
 }
 
 function tableHTML(rows,full) {
@@ -1719,6 +1716,25 @@ async function confirmTransfer() {
   renderNotifBell();
   toast('✓ ' + id + ' transferred to ' + newSite);
 }
+
+// ── FIT TABLE ──────────────────────────────────────────────────────────────
+function fitAssetTable() {
+  const wrap = document.querySelector('#view-assets .table-scroll-wrap');
+  if (!wrap) return;
+  const toolbar = document.querySelector('#view-assets .table-toolbar');
+  const tableArea = document.querySelector('#view-assets .table-area');
+  if (!toolbar || !tableArea) return;
+  const header = document.querySelector('header');
+  const banner = document.getElementById('warrantyBanner');
+  const headerH = header ? header.offsetHeight : 60;
+  const bannerH = (banner && banner.classList.contains('show')) ? banner.offsetHeight : 0;
+  const toolbarH = toolbar.offsetHeight;
+  const padding = 48;
+  const available = window.innerHeight - headerH - bannerH - toolbarH - padding;
+  wrap.style.height = Math.max(available, 200) + 'px';
+  wrap.style.overflowY = 'auto';
+}
+window.addEventListener('resize', fitAssetTable);
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
