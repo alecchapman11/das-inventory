@@ -1107,10 +1107,15 @@ async function logAsset() {
   const idx=assets.findIndex(a=>a.id===id);
   // Record history
   if (!assetHistory[id]) assetHistory[id]=[];
+  const beforeAsset = idx>=0 ? {...assets[idx]} : null;
+  const action = idx>=0?'Asset Updated':'Asset Created';
+  const diff = beforeAsset ? buildDiff(beforeAsset, entry) : null;
   assetHistory[id].unshift({
-    date:new Date().toLocaleString(), tech:currentTech,
-    action:idx>=0?'Asset Updated':'Asset Created',
-    snapshot:{status:entry.status,condition:entry.condition,rma:entry.rma,zone:entry.zone,notes:entry.notes}
+    date:new Date().toLocaleString(), tech:currentTech, action,
+    snapshot:{status:entry.status,condition:entry.condition,rma:entry.rma,zone:entry.zone,notes:entry.notes},
+    diff: diff || null,
+    before: beforeAsset ? {status:beforeAsset.status,condition:beforeAsset.condition,rma:beforeAsset.rma,site:beforeAsset.site,zone:beforeAsset.zone,warranty:beforeAsset.warranty} : null,
+    after: {status:entry.status,condition:entry.condition,rma:entry.rma,site:entry.site,zone:entry.zone,warranty:entry.warranty}
   });
   if (idx>=0) assets[idx]=entry; else assets.push(entry);
   const newScanEntry = {
@@ -1121,8 +1126,8 @@ async function logAsset() {
   };
   scanLog.unshift(newScanEntry);
   await save();
-  const notifAction = idx>=0 ? 'Asset Updated' : 'Asset Created';
-  const notifDetails = idx>=0 ? `${entry.type} updated at ${entry.site}` : `${entry.type} added to ${entry.site}`;
+  const notifAction = idx>=0 ? action : 'Asset Created';
+  const notifDetails = diff || (idx>=0 ? `${entry.type} updated at ${entry.site}` : `${entry.type} added to ${entry.site}`);
   logNotification(id, notifAction, entry.site, notifDetails);
   populateSiteFilters(); checkWarrantyBanner();
   clearForm(); renderAssets(document.getElementById('searchBox').value||'');
@@ -1239,19 +1244,28 @@ async function saveEdit() {
   const orig=document.getElementById('edit-id-orig').value;
   const idx=assets.findIndex(a=>a.id===orig); if (idx<0) return;
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const before={...assets[idx]};
   const updated={...assets[idx],id:g('edit-id'),type:g('edit-type'),category:g('edit-category'),mfr:g('edit-mfr'),model:g('edit-model'),serial:g('edit-serial'),site:g('edit-site'),building:g('edit-building'),zone:g('edit-zone'),status:g('edit-status'),condition:g('edit-condition'),rma:g('edit-rma'),warranty:g('edit-warranty'),dateinstalled:g('edit-dateinstalled'),datein:g('edit-datein'),notes:g('edit-notes')};
-  if (!assetHistory[orig]) assetHistory[orig]=[];
-  assetHistory[orig].unshift({date:new Date().toLocaleString(),tech:currentTech,action:(()=>{
+  const diff = buildDiff(before, updated);
+  const action = (()=>{
     const changes=[];
-    if(updated.status!==assets[idx].status) changes.push('Status Changed');
-    if(updated.condition!==assets[idx].condition) changes.push('Condition Changed');
-    if(updated.rma!==assets[idx].rma) changes.push(updated.rma!=='None'&&assets[idx].rma==='None'?'RMA Opened':'RMA Updated');
-    if(updated.warranty!==assets[idx].warranty) changes.push('Warranty Updated');
-    if(updated.site!==assets[idx].site) changes.push('Site Transfer');
+    if(updated.status!==before.status) changes.push('Status Changed');
+    if(updated.condition!==before.condition) changes.push('Condition Changed');
+    if(updated.rma!==before.rma) changes.push(updated.rma!=='None'&&before.rma==='None'?'RMA Opened':'RMA Updated');
+    if(updated.warranty!==before.warranty) changes.push('Warranty Updated');
+    if(updated.site!==before.site) changes.push('Site Transfer');
     return changes.length?changes.join(' · '):'Asset Updated';
-  })(),snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes}});
+  })();
+  if (!assetHistory[orig]) assetHistory[orig]=[];
+  assetHistory[orig].unshift({
+    date:new Date().toLocaleString(),tech:currentTech,action,
+    snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes},
+    diff: diff || null,
+    before:{status:before.status,condition:before.condition,rma:before.rma,site:before.site,zone:before.zone,warranty:before.warranty},
+    after:{status:updated.status,condition:updated.condition,rma:updated.rma,site:updated.site,zone:updated.zone,warranty:updated.warranty}
+  });
   assets[idx]=updated; await save();
-  logNotification(updated.id, updated.rma!=='None'&&assets[idx]?.rma==='None'?'RMA Opened':updated.condition!==assets[idx]?.condition&&(updated.condition==='Poor'||updated.condition==='Damaged')?'Condition Changed':'Asset Updated', updated.site, `${updated.type} at ${updated.site}`);
+  logNotification(updated.id, action, updated.site, diff || `${updated.type} at ${updated.site}`);
   closeModal('editModal');
   renderAssets(''); renderAssetsFull(''); checkWarrantyBanner(); populateSiteFilters();
   toast('✓ Asset updated');
@@ -1293,10 +1307,18 @@ function openHistory(id) {
           <span class="history-action">${h.action}</span>
         </div>
         <div class="history-changes">
-          Status: <strong>${h.snapshot.status||'—'}</strong> &nbsp;|&nbsp;
-          Condition: <strong>${h.snapshot.condition||'—'}</strong> &nbsp;|&nbsp;
-          RMA: <strong>${h.snapshot.rma||'—'}</strong>
-          ${h.snapshot.notes?`<br><span style="color:var(--text-dim);font-size:11px">Notes: ${h.snapshot.notes}</span>`:''}
+          ${h.diff ? `<div style="margin-bottom:6px">${h.diff.split(' · ').map(d=>{
+            const parts = d.split(': ');
+            const label = parts[0];
+            const change = parts.slice(1).join(': ');
+            const [from, to] = change.split(' → ');
+            return `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--slate);min-width:80px;display:inline-block">${label}:</span> <span style="color:var(--text-dim);text-decoration:line-through">${from||'—'}</span> <span style="color:var(--slate);margin:0 4px">→</span> <span style="color:var(--cyan);font-weight:600">${to||'—'}</span></div>`;
+          }).join('')}</div>` : `<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">
+            Status: <strong style="color:var(--text)">${h.snapshot.status||'—'}</strong> &nbsp;|&nbsp;
+            Condition: <strong style="color:var(--text)">${h.snapshot.condition||'—'}</strong> &nbsp;|&nbsp;
+            RMA: <strong style="color:var(--text)">${h.snapshot.rma||'—'}</strong>
+          </div>`}
+          ${h.snapshot.notes?`<div style="color:var(--text-dim);font-size:11px;margin-top:4px">Notes: ${h.snapshot.notes}</div>`:''}
         </div>
       </div>`).join('');
   }
@@ -1808,6 +1830,20 @@ function fitAssetTable() {
 window.addEventListener('resize', fitAssetTable);
 
 // ── NOTIFICATIONS LOG ──────────────────────────────────────────────────────
+function buildDiff(oldAsset, newAsset) {
+  const fields = [
+    {key:'status', label:'Status'},
+    {key:'condition', label:'Condition'},
+    {key:'rma', label:'RMA'},
+    {key:'site', label:'Site'},
+    {key:'zone', label:'Zone'},
+    {key:'warranty', label:'Warranty'}
+  ];
+  return fields
+    .filter(f => oldAsset[f.key] !== newAsset[f.key])
+    .map(f => `${f.label}: ${oldAsset[f.key]||'—'} → ${newAsset[f.key]||'—'}`)
+    .join(' · ');
+}
 async function logNotification(assetId, action, site, details) {
   try {
     await db.from('notifications').insert([{
