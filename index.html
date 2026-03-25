@@ -482,7 +482,6 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
           </div>
           <div class="custom-select-dropdown" id="customSiteFilterDropdown"></div>
         </div>
-        <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
       </div>
       <div id="assetTableWrap"></div>
     </div>
@@ -1053,6 +1052,14 @@ function openLightbox(src){document.getElementById('lightboxImg').src=src;docume
 async function logAsset() {
   const id=document.getElementById('barcodeInput').value.trim();
   if (!id) { toast('⚠ Enter or scan a barcode ID first','#F5A623'); return; }
+  const condVal = document.getElementById('f-condition').value;
+  if ((condVal === 'Poor' || condVal === 'Damaged') && currentPhotos.length === 0) {
+    toast('⚠ A photo is required when condition is Poor or Damaged','#F5A623');
+    document.getElementById('photoPreview').scrollIntoView({behavior:'smooth', block:'center'});
+    document.querySelector('.photo-upload-area').style.borderColor = 'var(--red)';
+    setTimeout(() => { document.querySelector('.photo-upload-area').style.borderColor = ''; }, 3000);
+    return;
+  }
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const rmaVal=g('f-rma')||'None';
   const existing=assets.find(a=>a.id===id);
