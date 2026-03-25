@@ -575,7 +575,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       <div class="kpi-card kpi-green"><div class="kpi-label">Installed</div><div class="kpi-value" id="d-installed">0</div></div>
       <div class="kpi-card kpi-amber"><div class="kpi-label">Pending</div><div class="kpi-value" id="d-pending">0</div></div>
       <div class="kpi-card kpi-red"><div class="kpi-label">Active RMAs</div><div class="kpi-value" id="d-rma">0</div></div>
-      <div class="kpi-card kpi-cyan"><div class="kpi-label">Total Scans</div><div class="kpi-value" id="d-scans">0</div></div>
+      <div class="kpi-card kpi-cyan"><div class="kpi-label">Changes Today</div><div class="kpi-value" id="d-scans">0</div></div>
     </div>
     <div class="charts-grid">
       <div class="chart-card"><div class="chart-card-title">Assets by Site</div><div class="chart-wrap"><canvas id="chartSite"></canvas></div></div>
@@ -1441,7 +1441,15 @@ function renderDash() {
   document.getElementById('d-installed').textContent=assets.filter(a=>a.status==='Installed').length;
   document.getElementById('d-pending').textContent  =assets.filter(a=>a.status==='Pending').length;
   document.getElementById('d-rma').textContent      =assets.filter(a=>a.rma&&a.rma!=='None'&&a.rma!=='Closed').length;
-  document.getElementById('d-scans').textContent    =scanLog.length;
+  (async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const {data} = await db.from('notifications').select('id').gte('created_at', today + 'T00:00:00').lte('created_at', today + 'T23:59:59');
+      document.getElementById('d-scans').textContent = data?.length || 0;
+    } catch(e) {
+      document.getElementById('d-scans').textContent = scanLog.length;
+    }
+  })();
 
   // Chart: by site
   const siteMap={};
