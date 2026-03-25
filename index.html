@@ -1214,6 +1214,7 @@ function tableHTML(rows,full) {
             <button class="act-item act-hist" onclick="openHistory('${a.id}')">◎ History</button>
             <button class="act-item act-label" onclick="openLabelModal('${a.id}')">🏷 Print Label</button>
             <button class="act-item" style="color:var(--cyan)" onclick="openTransfer('${a.id}')">🔄 Transfer Site</button>
+            <button class="act-item" style="color:var(--slate)" onclick="openDuplicate('${a.id}')">⎘ Duplicate</button>
             <button class="act-item act-photo" onclick="openPhotos('${a.id}')">📷 Photos${a.photos&&a.photos.length?' ('+a.photos.length+')':''}</button>
             <div class="act-divider"></div>
             <button class="act-item act-del" onclick="openDelete('${a.id}')">✕ Delete</button>
@@ -1942,6 +1943,69 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.pill-wrap')) closePillDropdown();
 });
 
+// ── DUPLICATE ASSET ────────────────────────────────────────────────────────
+let duplicateSourceId = null;
+function openDuplicate(id) {
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+  duplicateSourceId = id;
+  document.getElementById('dupSourceId').textContent = id;
+  document.getElementById('dupSummary').textContent = `${a.type} · ${a.category} · ${a.mfr} ${a.model}`;
+  document.getElementById('dup-id').value = '';
+  document.getElementById('dup-serial').value = '';
+  document.getElementById('dup-site').value = a.site || '';
+  document.getElementById('dup-building').value = a.building || '';
+  document.getElementById('dup-zone').value = a.zone || '';
+  document.getElementById('dup-notes').value = a.notes || '';
+  openModal('duplicateModal');
+  setTimeout(() => document.getElementById('dup-id').focus(), 100);
+}
+async function confirmDuplicate() {
+  const source = assets.find(x => x.id === duplicateSourceId);
+  if (!source) return;
+  const newId = document.getElementById('dup-id').value.trim();
+  const newSerial = document.getElementById('dup-serial').value.trim();
+  if (!newId) { toast('⚠ Please enter a new Asset ID', '#F5A623'); return; }
+  if (assets.find(a => a.id === newId)) { toast('⚠ Asset ID ' + newId + ' already exists', '#F5A623'); return; }
+  const newAsset = {
+    ...source,
+    id: newId,
+    serial: newSerial,
+    site: document.getElementById('dup-site').value.trim() || source.site,
+    building: document.getElementById('dup-building').value.trim() || source.building,
+    zone: document.getElementById('dup-zone').value.trim() || source.zone,
+    notes: document.getElementById('dup-notes').value.trim(),
+    photos: [],
+    date: new Date().toISOString(),
+    tech: currentTech,
+    datein: today(),
+    dateout: '',
+    dateinstalled: '',
+    rmaOpenDate: '',
+    rmaCloseDate: '',
+    rma: 'None'
+  };
+  if (!assetHistory[newId]) assetHistory[newId] = [];
+  assetHistory[newId].unshift({
+    date: new Date().toLocaleString(), tech: currentTech,
+    action: 'Asset Created',
+    snapshot: {status:newAsset.status, condition:newAsset.condition, rma:'None', notes:newAsset.notes},
+    diff: null, before: null,
+    after: {status:newAsset.status, condition:newAsset.condition, rma:'None', site:newAsset.site, zone:newAsset.zone, warranty:newAsset.warranty}
+  });
+  assets.push(newAsset);
+  await save();
+  logNotification(newId, 'Asset Created', newAsset.site, `${newAsset.type} duplicated from ${duplicateSourceId} at ${newAsset.site}`);
+  closeModal('duplicateModal');
+  populateSiteFilters();
+  renderAssets('');
+  renderAssetsFull('');
+  checkWarrantyBanner();
+  renderNotifBell();
+  toast('✓ ' + newId + ' created as duplicate of ' + duplicateSourceId);
+  duplicateSourceId = null;
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
 </script>
@@ -1956,6 +2020,48 @@ populateTechSelect();
     <div class="modal-actions">
       <button class="modal-btn modal-btn-cancel" onclick="closeModal('rmaCloseModal')">Cancel</button>
       <button class="modal-btn modal-btn-primary" onclick="confirmCloseRMA()" style="background:var(--green)">✓ Close RMA</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="duplicateModal">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="closeModal('duplicateModal')">✕</button>
+    <div class="modal-title">⎘ Duplicate Asset</div>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px">All details copied from <span id="dupSourceId" style="color:var(--cyan);font-family:var(--mono)">—</span>. Enter a new Asset ID and Serial Number.</p>
+    <div class="form-grid mg-b">
+      <div class="form-group">
+        <label>New Asset ID</label>
+        <input type="text" id="dup-id" placeholder="DAS-00000">
+      </div>
+      <div class="form-group">
+        <label>Serial Number</label>
+        <input type="text" id="dup-serial" placeholder="S/N">
+      </div>
+    </div>
+    <div class="form-group mg-b">
+      <label>Site / Project</label>
+      <input type="text" id="dup-site" placeholder="e.g. Site A – Downtown Tower">
+    </div>
+    <div class="form-grid mg-b">
+      <div class="form-group">
+        <label>Building</label>
+        <input type="text" id="dup-building" placeholder="Building">
+      </div>
+      <div class="form-group">
+        <label>Floor / Zone</label>
+        <input type="text" id="dup-zone" placeholder="Floor / Zone">
+      </div>
+    </div>
+    <div class="form-group mg-b">
+      <label>Notes</label>
+      <textarea id="dup-notes" style="min-height:60px" placeholder="Optional notes..."></textarea>
+    </div>
+    <div style="background:rgba(30,111,191,0.06);border:1px solid rgba(30,111,191,0.15);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--text-dim);margin-bottom:16px">
+      Copying: <span id="dupSummary" style="color:var(--slate)">—</span>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('duplicateModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmDuplicate()">⎘ Create Duplicate</button>
     </div>
   </div>
 </div>
