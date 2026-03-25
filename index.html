@@ -354,6 +354,10 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .activity-detail{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .activity-meta{font-size:10px;font-family:var(--mono);color:var(--slate);margin-top:3px}
 .activity-empty{text-align:center;padding:24px;color:var(--text-dim);font-size:13px}
+.pill-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:var(--navy-mid);border:1px solid var(--blue);border-radius:6px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.5);overflow:hidden;min-width:140px}
+.pill-dropdown-item{display:block;width:100%;padding:7px 12px;font-size:11px;font-family:var(--mono);font-weight:600;cursor:pointer;background:none;border:none;text-align:left;transition:background 0.12s;white-space:nowrap;color:var(--text)}
+.pill-dropdown-item:hover{background:rgba(30,111,191,0.15)}
+.pill-wrap{position:relative;display:inline-block}
 </style>
 </head>
 <body>
@@ -1217,8 +1221,8 @@ function tableHTML(rows,full) {
         </div>
       </td>`;
       if (c==='id')        return`<td class="asset-id">${a[c]}</td>`;
-      if (c==='status')    return`<td>${statusPill(a[c])}</td>`;
-      if (c==='condition') return`<td>${condPill(a[c])}</td>`;
+      if (c==='status') return`<td style="overflow:visible"><div class="pill-wrap"><span onclick="openPillDropdown('${a.id}','status','${a[c]}',['Installed','Pending','In Storage','In Transit','Decommissioned','RMA Sent'],event)" style="cursor:pointer">${statusPill(a[c])}</span></div></td>`;
+      if (c==='condition') return`<td style="overflow:visible"><div class="pill-wrap"><span onclick="openPillDropdown('${a.id}','condition','${a[c]}',['New','Good','Fair','Poor','Damaged','Unknown'],event)" style="cursor:pointer">${condPill(a[c])}</span></div></td>`;
       if (c==='rma')       return`<td>${rmaPill(a[c])}</td>`;
       if (c==='notes')     return noteCell(a[c]);
       if (c==='warranty'&&a[c]){const d=Math.round((new Date(a[c])-new Date())/86400000);const cls=d<0?'pill-rma':d<90?'pill-fair':'pill-good';return`<td><span class="pill ${cls}">${a[c]}</span></td>`;}
@@ -1856,6 +1860,63 @@ async function logNotification(assetId, action, site, details) {
     }]);
   } catch(e) { console.warn('Notification log error:', e); }
 }
+
+// ── PILL DROPDOWN ──────────────────────────────────────────────────────────
+let activePillDropdown = null;
+function openPillDropdown(assetId, field, currentVal, options, e) {
+  e.stopPropagation();
+  closePillDropdown();
+  const trigger = e.currentTarget;
+  const wrap = trigger.closest('.pill-wrap');
+  if (!wrap) return;
+  const dropdown = document.createElement('div');
+  dropdown.className = 'pill-dropdown';
+  dropdown.id = 'pillDropdown';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-dropdown-item';
+    btn.textContent = opt;
+    if (opt === currentVal) btn.style.color = 'var(--cyan)';
+    btn.onclick = async (ev) => {
+      ev.stopPropagation();
+      await quickUpdateAsset(assetId, field, opt);
+      closePillDropdown();
+    };
+    dropdown.appendChild(btn);
+  });
+  wrap.appendChild(dropdown);
+  activePillDropdown = dropdown;
+}
+function closePillDropdown() {
+  const existing = document.getElementById('pillDropdown');
+  if (existing) existing.remove();
+  activePillDropdown = null;
+}
+async function quickUpdateAsset(assetId, field, newVal) {
+  const idx = assets.findIndex(a => a.id === assetId);
+  if (idx < 0) return;
+  const before = {...assets[idx]};
+  assets[idx][field] = newVal;
+  const diff = buildDiff(before, assets[idx]);
+  const actionMap = {status:'Status Changed', condition:'Condition Changed'};
+  const action = actionMap[field] || 'Asset Updated';
+  if (!assetHistory[assetId]) assetHistory[assetId] = [];
+  assetHistory[assetId].unshift({
+    date: new Date().toLocaleString(), tech: currentTech, action,
+    snapshot: {status:assets[idx].status, condition:assets[idx].condition, rma:assets[idx].rma, notes:assets[idx].notes},
+    diff, before:{status:before.status,condition:before.condition,rma:before.rma,site:before.site,zone:before.zone,warranty:before.warranty},
+    after:{status:assets[idx].status,condition:assets[idx].condition,rma:assets[idx].rma,site:assets[idx].site,zone:assets[idx].zone,warranty:assets[idx].warranty}
+  });
+  await save();
+  logNotification(assetId, action, assets[idx].site, diff || `${assets[idx].type} at ${assets[idx].site}`);
+  renderAssets(document.getElementById('searchBox')?.value || '');
+  renderAssetsFull(document.getElementById('searchBox2')?.value || '');
+  renderNotifBell();
+  toast('✓ ' + assetId + ' ' + field + ' updated to ' + newVal);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.pill-wrap')) closePillDropdown();
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
