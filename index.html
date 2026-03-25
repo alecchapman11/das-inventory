@@ -834,8 +834,14 @@ async function save() {
       entries.forEach(h => {
         historyRows.push({
           id: h.supabaseId || undefined,
-          asset_id:assetId, date:h.date, tech:h.tech,
-          action:h.action, snapshot:{...(h.snapshot||{}), diff:h.diff||null, before:h.before||null, after:h.after||null}
+          asset_id: assetId,
+          date: h.date,
+          tech: h.tech,
+          action: h.action,
+          snapshot: h.snapshot,
+          diff: h.diff || null,
+          before: h.before || null,
+          after: h.after || null
         });
       });
     });
