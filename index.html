@@ -1473,22 +1473,38 @@ function renderDash() {
   statRows('stat-status',['Installed','Pending','In Storage','In Transit','Decommissioned','RMA Sent'],'status');
   statRows('stat-condition',['New','Good','Fair','Poor','Damaged','Unknown'],'condition');
 
-  // Technician activity
-  const techStats={};
-  scanLog.forEach(s=>{if(s.tech)techStats[s.tech]=(techStats[s.tech]||0)+1;});
-  const sorted=Object.entries(techStats).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('stat-tech').innerHTML=sorted.length?sorted.map(([name,count])=>{
-    const initials=name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    const lastScan=scanLog.find(s=>s.tech===name);
-    return`<div class="tech-row">
-      <div class="tech-avatar">${initials}</div>
-      <div class="tech-info">
-        <div class="tech-info-name">${name}</div>
-        <div class="tech-info-meta">${lastScan?'Last: '+lastScan.date.split(',')[0]:'No scans'}</div>
-      </div>
-      <div class="tech-scan-count">${count}</div>
-    </div>`;
-  }).join(''):`<div class="empty-state" style="padding:20px"><div class="icon">—</div>No activity yet</div>`;
+  // Technician activity — pulled from Supabase notifications
+  (async () => {
+    try {
+      const {data} = await db.from('notifications').select('tech, created_at').order('created_at', {ascending:false});
+      if (!data || !data.length) {
+        document.getElementById('stat-tech').innerHTML='<div class="empty-state" style="padding:20px"><div class="icon">—</div>No activity yet</div>';
+        return;
+      }
+      const techStats = {};
+      const techLast = {};
+      data.forEach(n => {
+        if (!n.tech) return;
+        techStats[n.tech] = (techStats[n.tech] || 0) + 1;
+        if (!techLast[n.tech]) techLast[n.tech] = n.created_at;
+      });
+      const sorted = Object.entries(techStats).sort((a,b) => b[1]-a[1]);
+      document.getElementById('stat-tech').innerHTML = sorted.map(([name, count]) => {
+        const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        const lastDate = techLast[name] ? new Date(techLast[name]).toLocaleDateString() : 'No activity';
+        return `<div class="tech-row">
+          <div class="tech-avatar">${initials}</div>
+          <div class="tech-info">
+            <div class="tech-info-name">${name}</div>
+            <div class="tech-info-meta">Last: ${lastDate}</div>
+          </div>
+          <div class="tech-scan-count">${count}</div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('stat-tech').innerHTML='<div class="empty-state" style="padding:20px"><div class="icon">—</div>Could not load activity</div>';
+    }
+  })();
 
   // Recent Activity
   (async () => {
