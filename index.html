@@ -283,6 +283,10 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 ::-webkit-scrollbar-thumb{background:#1E6FBF;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#2E8FEF}
 *{scrollbar-width:thin;scrollbar-color:#1E6FBF #0D1B2A}
+#view-assets .table-area{display:flex;flex-direction:column;height:calc(100vh - 60px);padding-bottom:0}
+#view-assets .table-toolbar{flex-shrink:0;padding-bottom:18px}
+#view-assets .table-scroll-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:auto}
+#view-assets .table-scroll-wrap table{min-width:1400px}
 .rma-row-warn{border-left:3px solid var(--amber)!important}
 .rma-row-crit{border-left:3px solid var(--red)!important}
 .rma-row-warn td:first-child{padding-left:9px}
@@ -323,7 +327,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .login-custom-option{padding:10px 14px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:background 0.12s}
 .login-custom-option:hover{background:rgba(30,111,191,0.2)}
 .login-custom-option.selected{color:#00C2D4;background:rgba(0,194,212,0.08)}
-.table-scroll-wrap{overflow-x:auto;overflow-y:visible;width:100%;flex:1;min-height:0}
+.table-scroll-wrap{overflow-x:auto;overflow-y:visible;width:100%}
 .table-scroll-wrap table{min-width:1400px}
 .table-scroll-wrap th{position:sticky;top:0;background:var(--navy);z-index:2}
 .modal-section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -493,8 +497,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 
 <!-- ASSETS VIEW -->
 <div class="view" id="view-assets">
-  <div class="table-area" style="height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden;">
-    <div class="table-toolbar" style="flex-shrink:0;padding:24px 24px 0 24px">
+  <div class="table-area" style="height:calc(100vh - 60px);overflow-y:auto;overflow-x:hidden;">
+    <div class="table-toolbar">
       <h2>ASSET REGISTER</h2>
       <span class="count-badge" id="assetCount2">0 assets</span>
       <input class="search-box" type="text" id="searchBox2" placeholder="Search…" oninput="renderAssetsFull(this.value)">
@@ -506,7 +510,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
         <div class="custom-select-dropdown" id="customSiteFilter2Dropdown"></div>
       </div>
     </div>
-    <div id="assetTableFull" style="flex:1;overflow-x:auto;overflow-y:auto;padding:0 24px 24px 24px;min-height:0"></div>
+    <div id="assetTableFull"></div>
   </div>
 </div>
 
