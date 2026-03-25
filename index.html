@@ -797,7 +797,7 @@ async function save() {
         location:s.location, action:s.action, scan_type:s.scanType,
         datein:s.datein, dateout:s.dateout, status:s.status, notes:s.notes
       })).filter(s => s.asset_id);
-    const newLogRows = logRows.filter(r => !r.id).map(({id, ...rest}) => rest);
+    const newLogRows = logRows.filter(r => !r.id).map(r => ({asset_id:r.asset_id, date:r.date, tech:r.tech, site:r.site, location:r.location, action:r.action, scan_type:r.scan_type, datein:r.datein, dateout:r.dateout, status:r.status, notes:r.notes}));
     const existingLogRows = logRows.filter(r => r.id);
     if (newLogRows.length) await db.from('scan_log').insert(newLogRows);
     if (existingLogRows.length) await db.from('scan_log').upsert(existingLogRows, {onConflict:'id'});
@@ -811,7 +811,7 @@ async function save() {
         });
       });
     });
-    const newHistoryRows = historyRows.filter(r => !r.id).map(({id, ...rest}) => rest);
+    const newHistoryRows = historyRows.filter(r => !r.id).map(r => ({asset_id:r.asset_id, date:r.date, tech:r.tech, action:r.action, snapshot:r.snapshot}));
     const existingHistoryRows = historyRows.filter(r => r.id);
     if (newHistoryRows.length) {
       await db.from('asset_history').insert(newHistoryRows);
