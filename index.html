@@ -1309,7 +1309,7 @@ function renderRMA() {
           ${escalBadge}
           <div style="display:flex;gap:4px">
           <button class="btn-sm btn-edit" onclick="openEdit('${a.id}')">✎ Edit</button>
-          ${!showClose?`<button class="btn-sm" style="color:var(--green);border-color:rgba(15,168,110,0.3)" onclick="closeRMA('${a.id}')">✓ Close</button>`:''}
+          ${!showClose?`<button class="btn-sm" style="color:var(--green);border-color:rgba(15,168,110,0.3)" onclick="openRMAClose('${a.id}')">✓ Close</button>`:''}
           </div>
         </div></td>
         <td class="asset-id">${a.id}</td><td>${a.type||'—'}</td><td>${a.mfr||'—'}</td><td>${a.model||'—'}</td>
@@ -1326,12 +1326,31 @@ function renderRMA() {
   document.getElementById('rmaOpenWrap').innerHTML=rmaTable(openRma,false);
   document.getElementById('rmaClosedWrap').innerHTML=rmaTable(closedRma,true);
 }
-async function closeRMA(id) {
-  const a=assets.find(x=>x.id===id); if (!a) return;
-  a.rma='Closed'; a.rmaCloseDate=today();
-  if (!assetHistory[id]) assetHistory[id]=[];
-  assetHistory[id].unshift({date:new Date().toLocaleString(),tech:currentTech,action:'RMA Closed',snapshot:{status:a.status,condition:a.condition,rma:'Closed',notes:a.notes}});
-  await save(); renderRMA(); toast('✓ RMA closed for '+id,'var(--green)');
+let pendingRMACloseId = null;
+function openRMAClose(id) {
+  pendingRMACloseId = id;
+  document.getElementById('rmaCloseAssetId').textContent = id;
+  openModal('rmaCloseModal');
+}
+async function confirmCloseRMA() {
+  const id = pendingRMACloseId;
+  if (!id) return;
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+  a.rma = 'Closed';
+  a.rmaCloseDate = today();
+  if (!assetHistory[id]) assetHistory[id] = [];
+  assetHistory[id].unshift({
+    date: new Date().toLocaleString(), tech: currentTech,
+    action: 'RMA Closed',
+    snapshot: {status: a.status, condition: a.condition, rma: 'Closed', notes: a.notes}
+  });
+  await save();
+  closeModal('rmaCloseModal');
+  renderRMA();
+  renderNotifBell();
+  toast('✓ RMA closed for ' + id, 'var(--green)');
+  pendingRMACloseId = null;
 }
 
 // ── SCAN LOG ───────────────────────────────────────────────────────────────
@@ -1697,5 +1716,19 @@ async function confirmTransfer() {
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
 </script>
+<div class="modal-overlay" id="rmaCloseModal">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeModal('rmaCloseModal')">✕</button>
+    <div class="modal-title">✓ Close RMA</div>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:8px">Close RMA for asset:</p>
+    <p style="font-family:var(--mono);color:var(--cyan);font-size:15px;margin-bottom:16px" id="rmaCloseAssetId">—</p>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:6px">Today's date will be stamped as the close date.</p>
+    <p style="color:var(--slate);font-size:11px">This can be reversed by editing the asset if needed.</p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('rmaCloseModal')">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmCloseRMA()" style="background:var(--green)">✓ Close RMA</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
