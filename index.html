@@ -1161,7 +1161,7 @@ function renderAssets(q) {
 function renderAssetsFull(q) {
   const f=filterAssets(q,'siteFilter2');
   document.getElementById('assetCount2').textContent=f.length+' asset'+(f.length!==1?'s':'');
-  document.getElementById('assetTableFull').innerHTML='<div class="table-scroll-wrap" style="visibility:hidden">'+tableHTML(f,true)+'</div>';
+  document.getElementById('assetTableFull').innerHTML='<div class="table-scroll-wrap" style="display:none">'+tableHTML(f,true)+'</div>';
   requestAnimationFrame(() => requestAnimationFrame(fitAssetTable));
 }
 
@@ -1732,7 +1732,7 @@ function fitAssetTable() {
   const available = window.innerHeight - headerH - bannerH - toolbarH - padding;
   wrap.style.height = Math.max(available, 200) + 'px';
   wrap.style.overflowY = 'auto';
-  wrap.style.visibility = 'visible';
+  wrap.style.display = 'block';
 }
 window.addEventListener('resize', fitAssetTable);
 
