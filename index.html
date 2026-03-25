@@ -323,7 +323,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .login-custom-option{padding:10px 14px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:background 0.12s}
 .login-custom-option:hover{background:rgba(30,111,191,0.2)}
 .login-custom-option.selected{color:#00C2D4;background:rgba(0,194,212,0.08)}
-.table-scroll-wrap{overflow-x:auto;overflow-y:visible;width:100%}
+.table-scroll-wrap{overflow-x:auto;overflow-y:visible;width:100%;position:sticky;bottom:0}
 .table-scroll-wrap table{min-width:1400px}
 .table-scroll-wrap th{position:sticky;top:0;background:var(--navy);z-index:2}
 .modal-section-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -493,8 +493,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 
 <!-- ASSETS VIEW -->
 <div class="view" id="view-assets">
-  <div class="table-area" style="height:calc(100vh - 60px);overflow-y:auto;overflow-x:auto;">
-    <div class="table-toolbar">
+  <div class="table-area" style="height:calc(100vh - 60px);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;">
+    <div class="table-toolbar" style="flex-shrink:0">
       <h2>ASSET REGISTER</h2>
       <span class="count-badge" id="assetCount2">0 assets</span>
       <input class="search-box" type="text" id="searchBox2" placeholder="Search…" oninput="renderAssetsFull(this.value)">
@@ -506,7 +506,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
         <div class="custom-select-dropdown" id="customSiteFilter2Dropdown"></div>
       </div>
     </div>
-    <div id="assetTableFull"></div>
+    <div id="assetTableFull" style="flex:1;overflow-x:auto;overflow-y:auto"></div>
   </div>
 </div>
 
