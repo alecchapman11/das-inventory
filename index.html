@@ -1102,7 +1102,11 @@ async function logAsset() {
     scanType,datein:entry.datein,dateout:entry.dateout,status:entry.status,notes:entry.notes
   };
   scanLog.unshift(newScanEntry);
-  await save(); populateSiteFilters(); checkWarrantyBanner();
+  await save();
+  const notifAction = idx>=0 ? 'Asset Updated' : 'Asset Created';
+  const notifDetails = idx>=0 ? `${entry.type} updated at ${entry.site}` : `${entry.type} added to ${entry.site}`;
+  logNotification(id, notifAction, entry.site, notifDetails);
+  populateSiteFilters(); checkWarrantyBanner();
   clearForm(); renderAssets(document.getElementById('searchBox').value||'');
   toast(idx>=0?'✓ Asset '+id+' updated':'✓ Asset '+id+' logged');
 }
@@ -1228,14 +1232,20 @@ async function saveEdit() {
     if(updated.site!==assets[idx].site) changes.push('Site Transfer');
     return changes.length?changes.join(' · '):'Asset Updated';
   })(),snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes}});
-  assets[idx]=updated; await save(); closeModal('editModal');
+  assets[idx]=updated; await save();
+  logNotification(updated.id, updated.rma!=='None'&&assets[idx]?.rma==='None'?'RMA Opened':updated.condition!==assets[idx]?.condition&&(updated.condition==='Poor'||updated.condition==='Damaged')?'Condition Changed':'Asset Updated', updated.site, `${updated.type} at ${updated.site}`);
+  closeModal('editModal');
   renderAssets(''); renderAssetsFull(''); checkWarrantyBanner(); populateSiteFilters();
   toast('✓ Asset updated');
 }
 
 // ── DELETE ─────────────────────────────────────────────────────────────────
 function openDelete(id){pendingDeleteId=id;document.getElementById('deleteAssetId').textContent=id;openModal('deleteModal');}
-async function confirmDelete(){assets=assets.filter(a=>a.id!==pendingDeleteId);await save();closeModal('deleteModal');renderAssets('');toast('✓ Deleted '+pendingDeleteId,'#E5534B');pendingDeleteId=null;}
+async function confirmDelete(){
+  const deleted = assets.find(a=>a.id===pendingDeleteId);
+  assets=assets.filter(a=>a.id!==pendingDeleteId);await save();
+  if(deleted) logNotification(deleted.id,'Asset Deleted',deleted.site,`${deleted.type} permanently deleted from ${deleted.site}`);
+  closeModal('deleteModal');renderAssets('');toast('✓ Deleted '+pendingDeleteId,'#E5534B');pendingDeleteId=null;}
 
 // ── PHOTOS ─────────────────────────────────────────────────────────────────
 function openPhotos(id){
@@ -1350,6 +1360,7 @@ async function confirmCloseRMA() {
     snapshot: {status: a.status, condition: a.condition, rma: 'Closed', notes: a.notes}
   });
   await save();
+  logNotification(id, 'RMA Closed', a.site, `RMA closed for ${a.type} at ${a.site}`);
   closeModal('rmaCloseModal');
   renderRMA();
   renderNotifBell();
@@ -1709,6 +1720,7 @@ async function confirmTransfer() {
     }
   });
   await save();
+  logNotification(id, 'Site Transfer', newSite, `${assets[idx].type} transferred from ${oldSite} → ${newSite}${reason ? ' — ' + reason : ''}`);
   closeModal('transferModal');
   populateSiteFilters();
   renderAssets('');
@@ -1735,6 +1747,20 @@ function fitAssetTable() {
   wrap.style.display = 'block';
 }
 window.addEventListener('resize', fitAssetTable);
+
+// ── NOTIFICATIONS LOG ──────────────────────────────────────────────────────
+async function logNotification(assetId, action, site, details) {
+  try {
+    await db.from('notifications').insert([{
+      asset_id: assetId,
+      action: action,
+      tech: currentTech,
+      site: site || '',
+      details: details || '',
+      read: false
+    }]);
+  } catch(e) { console.warn('Notification log error:', e); }
+}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
