@@ -1079,7 +1079,7 @@ async function logAsset() {
   if (!assetHistory[id]) assetHistory[id]=[];
   assetHistory[id].unshift({
     date:new Date().toLocaleString(), tech:currentTech,
-    action:idx>=0?'Updated':'Created',
+    action:idx>=0?'Asset Updated':'Asset Created',
     snapshot:{status:entry.status,condition:entry.condition,rma:entry.rma,zone:entry.zone,notes:entry.notes}
   });
   if (idx>=0) assets[idx]=entry; else assets.push(entry);
@@ -1206,7 +1206,15 @@ async function saveEdit() {
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const updated={...assets[idx],id:g('edit-id'),type:g('edit-type'),category:g('edit-category'),mfr:g('edit-mfr'),model:g('edit-model'),serial:g('edit-serial'),site:g('edit-site'),building:g('edit-building'),zone:g('edit-zone'),status:g('edit-status'),condition:g('edit-condition'),rma:g('edit-rma'),warranty:g('edit-warranty'),dateinstalled:g('edit-dateinstalled'),datein:g('edit-datein'),notes:g('edit-notes')};
   if (!assetHistory[orig]) assetHistory[orig]=[];
-  assetHistory[orig].unshift({date:new Date().toLocaleString(),tech:currentTech,action:'Edited via modal',snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes}});
+  assetHistory[orig].unshift({date:new Date().toLocaleString(),tech:currentTech,action:(()=>{
+    const changes=[];
+    if(updated.status!==assets[idx].status) changes.push('Status Changed');
+    if(updated.condition!==assets[idx].condition) changes.push('Condition Changed');
+    if(updated.rma!==assets[idx].rma) changes.push(updated.rma!=='None'&&assets[idx].rma==='None'?'RMA Opened':'RMA Updated');
+    if(updated.warranty!==assets[idx].warranty) changes.push('Warranty Updated');
+    if(updated.site!==assets[idx].site) changes.push('Site Transfer');
+    return changes.length?changes.join(' · '):'Asset Updated';
+  })(),snapshot:{status:updated.status,condition:updated.condition,rma:updated.rma,notes:updated.notes}});
   assets[idx]=updated; await save(); closeModal('editModal');
   renderAssets(''); renderAssetsFull(''); checkWarrantyBanner(); populateSiteFilters();
   toast('✓ Asset updated');
@@ -1227,7 +1235,7 @@ function openPhotos(id){
   openModal('photoModal');
 }
 function removeAssetPhoto(id,i){const a=assets.find(x=>x.id===id);if(!a||!a.photos)return;a.photos.splice(i,1);save();openPhotos(id);toast('✓ Photo removed');}
-function addAssetPhotos(id,e){const a=assets.find(x=>x.id===id);if(!a)return;if(!a.photos)a.photos=[];Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=ev=>{a.photos.push(ev.target.result);save();openPhotos(id);};r.readAsDataURL(file);});e.target.value='';}
+function addAssetPhotos(id,e){const a=assets.find(x=>x.id===id);if(!a)return;if(!a.photos)a.photos=[];Array.from(e.target.files).forEach(file=>{const r=new FileReader();r.onload=ev=>{a.photos.push(ev.target.result);if(!assetHistory[id])assetHistory[id]=[];assetHistory[id].unshift({date:new Date().toLocaleString(),tech:currentTech,action:'Photos Added',snapshot:{status:a.status,condition:a.condition,rma:a.rma,notes:'Photo added via asset register'}});save();openPhotos(id);};r.readAsDataURL(file);});e.target.value='';}
 
 // ── HISTORY ────────────────────────────────────────────────────────────────
 function openHistory(id) {
