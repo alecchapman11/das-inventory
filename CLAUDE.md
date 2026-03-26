@@ -6,9 +6,9 @@
 ## Project Overview
 Single-file HTML/CSS/JS web application for tracking DAS (Distributed Antenna System) equipment and accessories across multiple job sites. Built for Cleveland Electric field technicians.
 
-**Live URL:** (to be added after GitHub Pages deployment)
-**Repository:** (to be added after GitHub setup)
-**Current Version:** v3.0
+**Live URL:** https://alecchapman11.github.io/das-inventory/
+**Repository:** https://github.com/alecchapman11/das-inventory
+**Current Version:** v4.1
 
 ---
 
@@ -27,19 +27,45 @@ Single-file HTML/CSS/JS web application for tracking DAS (Distributed Antenna Sy
 
 ## Tech Stack
 - **Vanilla HTML/CSS/JS** — no build tools, no frameworks, no npm
+- **Supabase JS client v2** (`@supabase/supabase-js@2`) — cloud database backend
 - **Chart.js 4.4.0** — loaded from cdnjs CDN for dashboard charts
+- **JsBarcode 3.11.6** — loaded from CDN for real scannable Code128 barcodes
 - **IBM Plex Mono + IBM Plex Sans** — loaded from Google Fonts CDN
-- **localStorage** — all data stored client-side in the browser
-- **No backend, no server, no database** (yet)
+- **localStorage** — primary local cache; Supabase is the source of truth
+- **GitHub Pages** — live deployment from `main` branch
+
+---
+
+## Supabase Configuration
+```javascript
+const SUPABASE_URL = 'https://eofionpjpamphyioznxf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_v3Bq9YMPL5QeU42bQKb6IQ_AfymazQD';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+```
+
+### Supabase Tables
+| Table | Key Columns | Notes |
+|---|---|---|
+| `assets` | `asset_id`, `type`, `category`, `status`, `site`, `condition`, `rma`, `warranty`, `tech`, `serial`, `mfr`, `model`, `zone`, `building`, `notes`, `photos`, `datein`, `dateout`, `dateinstalled`, `rmaOpenDate`, `rmaCloseDate` | Upserted on every save |
+| `scan_log` | `id`, `asset_id`, `date`, `tech`, `site`, `location`, `action` | New rows inserted; existing upserted by `id` |
+| `asset_history` | `id`, `asset_id`, `date`, `tech`, `action`, `snapshot` | `snapshot` JSONB stores status/condition/rma/notes + `diff`/`before`/`after` for full audit trail. New rows inserted and stamped with `supabaseId` to prevent re-insert |
+| `technicians` | `id`, `name`, `pin` | Upserted on save |
+| `notifications` | `id`, `asset_id`, `action`, `tech`, `site`, `details`, `read`, `created_at` | Append-only; used for Recent Activity, Changes Today KPI, Technician Activity, and Since Last Visit alerts |
+
+### Supabase Sync Pattern
+- `save()` — async; upserts assets + techs, inserts/upserts scan_log, inserts new history rows (stamping returned `id` as `supabaseId`), upserts existing history rows
+- `doLogin()` — fetches all tables from Supabase on login; falls back to localStorage on error
+- `logNotification()` — async; inserts a row to `notifications` on every significant asset change
 
 ---
 
 ## Data Storage Keys (DO NOT RENAME)
 These localStorage keys are in use — renaming them will wipe user data:
 - `das_assets` — array of all asset objects
-- `das_log` — array of all scan log entries  
+- `das_log` — array of all scan log entries
 - `das_history` — object mapping asset ID → array of history entries
 - `das_techs` — array of technician objects with name and PIN
+- `das_last_login_<TechName>` — per-tech ISO timestamp of last login (used for since-last-visit alerts)
 
 ---
 
@@ -92,17 +118,39 @@ All CSS is in a single `<style>` block at the top of `index.html`.
 | Function | Purpose |
 |---|---|
 | `populateTechSelect()` | Populates login dropdown from `techs` array |
-| `doLogin()` | Authenticates and shows app |
+| `doLogin()` | Authenticates, loads from Supabase, stamps prevLogin, shows app |
+| `doLogout()` | Clears session and returns to login screen |
+| `save()` | Async — syncs all data to Supabase + localStorage |
 | `logAsset()` | Saves/updates an asset from the scan form |
+| `saveEdit()` | Saves asset edits from the edit modal with before/after diff |
 | `renderAssets(q)` | Renders compact asset table on scan panel |
-| `renderAssetsFull(q)` | Renders full asset register |
-| `renderRMA()` | Renders RMA tracker with aging |
+| `renderAssetsFull(q)` | Renders full asset register with dynamic height |
+| `fitAssetTable()` | JS-computed height for assets table scroll container |
+| `renderRMA()` | Renders RMA tracker with aging + escalation badges |
 | `renderLog()` | Renders scan log |
-| `renderDash()` | Renders dashboard + charts |
-| `renderLabels()` | Renders label generator |
-| `tableHTML(rows, full)` | Generates asset table HTML |
+| `renderDash()` | Renders dashboard + charts + Recent Activity + KPIs |
+| `renderLabels()` | Renders label generator with JsBarcode |
+| `tableHTML(rows, full)` | Generates asset table HTML with inline pill dropdowns |
 | `noteCell(text)` | Renders expandable note cell |
 | `toggleActMenu(btn, e)` | Opens/closes action dropdown |
+| `openPillDropdown(id, field, val, opts, e)` | Opens inline status/condition quick-change dropdown |
+| `quickUpdateAsset(id, field, val)` | Async — updates a single field inline with history + notification |
+| `openDuplicate(id)` | Opens duplicate asset modal pre-filled from source |
+| `confirmDuplicate()` | Async — creates duplicate asset with new ID |
+| `openTransfer(id)` | Opens site transfer modal |
+| `confirmTransfer()` | Async — executes site transfer with history entry |
+| `openRMAClose(id)` | Opens RMA close confirmation modal |
+| `confirmCloseRMA()` | Async — closes RMA with history + notification |
+| `buildDiff(old, new)` | Returns human-readable before→after diff string |
+| `logNotification(id, action, site, details)` | Async — inserts row to Supabase notifications table |
+| `buildNotifications()` | Builds in-app alert list from assets (warranty/RMA/condition) |
+| `renderNotifBell()` | Updates bell badge count |
+| `toggleNotifPanel()` | Opens/closes notification panel; triggers since-last-visit check |
+| `renderNotifList()` | Renders alert list in notification panel |
+| `buildSinceLastVisit(prevLogin)` | Async — queries notifications for other-tech changes since last login |
+| `renderSinceLastVisit(prevLogin)` | Async — renders since-last-visit section in notification panel |
+| `dismissSinceLastVisit()` | Dismisses since-last-visit section and saves current login time |
+| `saveLastLogin()` | Writes current ISO timestamp to localStorage for current tech |
 | `exportBackup()` | Exports full JSON backup |
 | `importBackup(e)` | Restores from JSON backup |
 | `importCSV(e)` | Bulk imports from CSV |
@@ -113,11 +161,39 @@ All CSS is in a single `<style>` block at the top of `index.html`.
 | View ID | Nav Label | Purpose |
 |---|---|---|
 | `view-scan` | ⬡ Scan | Main scan form + compact asset list |
-| `view-assets` | ▤ Assets | Full asset register |
-| `view-rma` | ↩ RMA | RMA tracker with aging |
+| `view-assets` | ▤ Assets | Full asset register with inline pill editing |
+| `view-rma` | ↩ RMA | RMA tracker with escalation badges |
 | `view-log` | ◎ Log | Scan log |
-| `view-dash` | ◈ Dashboard | KPIs + charts |
-| `view-tools` | ⚙ Tools | Backup, CSV import, label generator |
+| `view-dash` | ◈ Dashboard | KPIs (incl. Changes Today) + charts + Recent Activity + Technician Activity |
+| `view-tools` | ⚙ Tools | Label Generator → CSV Import → Backup & Restore |
+
+---
+
+## Notification Bell System
+The bell icon (`#notifBell`) in the header drives three layers of alerts:
+
+1. **In-app asset alerts** — warranty expiry, RMA aging, Poor/Damaged condition. Built from local `assets` array via `buildNotifications()`.
+2. **Recent Activity feed** — last 10 notifications from Supabase `notifications` table, rendered async inside `renderDash()`.
+3. **Since Last Visit** — on login, queries `notifications` for changes made by *other* techs since the current tech's last login. Shown as a summary section at the top of the notification panel. Dismissed via `dismissSinceLastVisit()` which updates the localStorage timestamp.
+
+`window._prevLogin` — global that holds the pre-login timestamp so `toggleNotifPanel()` can re-render the since-last-visit section after login.
+
+---
+
+## Asset History / Diff System
+Every asset mutation records a history entry in `assetHistory[assetId]`:
+```javascript
+{
+  date, tech, action,          // who/when/what
+  snapshot: { status, condition, rma, notes },  // current state snapshot
+  diff,                        // "Status: Installed → RMA Sent · Condition: Good → Damaged"
+  before: { status, condition, rma, site, zone, warranty },
+  after:  { status, condition, rma, site, zone, warranty }
+}
+```
+- `supabaseId` is added after successful Supabase insert to prevent re-inserting on next `save()`
+- `openHistory()` renders inline diff lines with strikethrough (before) → cyan bold (after)
+- `buildDiff(old, new)` compares: Status, Condition, RMA, Site, Zone, Warranty
 
 ---
 
@@ -130,20 +206,11 @@ Use conventional commits:
 - `docs:` README, CLAUDE.md, CHANGELOG updates
 - `chore:` version bumps, file renames
 
-**Examples:**
-```
-feat: add warranty expiry email notifications
-fix: correct RMA close date not saving on mobile
-style: increase scan panel form label font size
-docs: update CLAUDE.md with Supabase integration notes
-```
-
 ---
 
 ## Branching Rules
-- **`main`** — production, what GitHub Pages serves live. NEVER commit directly.
-- **`dev`** — all development work goes here first
-- Always create a PR from `dev` → `main` and wait for review before merging
+- **`main`** — production, what GitHub Pages serves live. All changes go directly to main.
+- No active dev branch — all commits pushed directly to `main`
 
 ---
 
@@ -159,22 +226,26 @@ When completing a change order:
 ## What NOT to Touch
 - Technician names/PINs in seed data
 - localStorage key names (`das_assets`, `das_log`, `das_history`, `das_techs`)
+- Supabase URL and key constants
 - The `today()` utility function — used in many places
 - The `save()` function — always call this after modifying any data
 - CSS variable names in `:root`
+- The `supabaseId` field on history entries — controls insert vs upsert routing
 
 ---
 
 ## Known Limitations
-- Data is localStorage only — not shared across devices or browsers
-- No authentication beyond PIN (PINs stored in plaintext in localStorage)
+- PINs stored in plaintext in localStorage (no proper auth yet)
 - Photos stored as base64 — large photos can fill localStorage quickly
-- Multi-device sync requires Supabase backend (planned future upgrade)
+- No offline mode — Supabase unavailability falls back to localStorage read-only
+- Since-last-visit only tracks changes by *other* techs (by design)
 
 ---
 
 ## Planned Future Features
-- Supabase backend for real-time multi-device sync
-- Warranty expiry email/SMS notifications
-- PDF report generation per site
+- Supabase Auth — replace PIN system with proper per-tech email/password login
+- Mobile-optimized layout — responsive design for field use on phones
+- Warranty / RMA email or SMS alerts via Resend or Twilio
+- PDF report generation per site — for client handoffs and inspections
+- Per-site dashboard drill-down — summary cards per site
 - Custom domain (das.clevelandelectric.com)

@@ -6,6 +6,51 @@ Format: `[vX.X] — YYYY-MM-DD — Description`
 
 ---
 
+## [v4.1] — 2026-03-25
+
+### Features Added
+- **⚡ Inline quick-change pills** — status and condition pills in both asset tables are now clickable dropdowns
+  - Click any Status or Condition pill to instantly change the value without opening the edit modal
+  - Dropdown appears inline, highlights current value in cyan, dismisses on outside click
+  - Change is saved to Supabase, logged to history with before/after diff, and toasted
+  - Implemented via `openPillDropdown()`, `quickUpdateAsset()`, `.pill-wrap` / `.pill-dropdown` CSS
+- **⎘ Duplicate Asset** — new action in every asset's Actions dropdown
+  - Modal pre-filled with all details from the source asset (type, category, mfr, model, site, building, zone, notes)
+  - Editable New Asset ID, Serial Number, Site, Building, Zone, Notes fields
+  - Resets RMA, dates, and photos on the copy — fresh slate for the new asset
+  - Logged as `Asset Created` in history with source reference in notification
+- **📋 Since Last Visit alerts** — notification bell now shows what other techs did while you were away
+  - On login, captures the previous login timestamp before overwriting it
+  - After 1 second, queries Supabase `notifications` for changes by other techs since that timestamp
+  - If changes found, bell gets `has-alerts` class and badge count is bumped
+  - Opening the bell panel shows a cyan summary section: date of last visit, total change count, up to 5 recent items with `+N more` overflow
+  - "Dismiss" button updates the stored login timestamp and clears the section
+  - Uses `window._prevLogin` so the panel can re-render the correct window if reopened
+  - Loading state shows a pulsing cyan dot with "Checking for updates..." while Supabase query is in flight
+- **📊 Recent Activity feed on Dashboard** — last 10 notifications from Supabase rendered as a live feed
+  - Async IIFE inside `renderDash()` queries `notifications` table
+  - Each entry shows icon (color-coded by action type), asset ID, tech, site, and relative time (`timeAgo()`)
+- **◈ Changes Today KPI** — replaced "Total Scans" dashboard KPI card with "Changes Today"
+  - Queries Supabase `notifications` for rows with `created_at` within today's UTC date range
+  - Falls back to `scanLog.length` if Supabase unavailable
+- **👷 Technician Activity from Supabase** — dashboard Technician Activity panel now queries `notifications` table
+  - Shows total action count and most recent activity date per tech
+  - Previously used local `scanLog` array (undercount); now reflects all cloud activity
+
+### Supabase / Data Fixes
+- **History diff/before/after now persisted to Supabase** — `snapshot` JSONB column now includes `diff`, `before`, `after` fields
+  - `historyRows.push()` spreads diff data into the snapshot before insert/upsert
+  - `newHistoryRows` map also merges diff fields into snapshot for new inserts
+  - On login, `doLogin()` extracts `diff`/`before`/`after` back out of `snapshot` for in-memory use
+- **`supabaseId` stamped after history insert** — after inserting new history rows, returned `id`s are written back to in-memory entries and persisted to localStorage, preventing duplicate inserts on subsequent `save()` calls
+- **`prevLogin` captured before overwrite** — `doLogin()` reads the stored login timestamp into `prevLogin` before calling `saveLastLogin()`, ensuring since-last-visit queries use the correct window
+- **`buildSinceLastVisit` tech filter fix** — `currentTech` captured into local `tech` variable before async Supabase call to prevent null filter edge case
+
+### UI
+- **Loading indicator for since-last-visit** — pulsing `.notif-checking-dot` shown while querying Supabase; removed automatically when result renders or returns empty
+
+---
+
 ## [v4.0] — 2026-03-24
 ### Infrastructure
 - **GitHub repository created** — project live at `https://alecchapman11.github.io/das-inventory/`
@@ -48,41 +93,30 @@ Format: `[vX.X] — YYYY-MM-DD — Description`
 - **✓ RMA close confirmation modal** — replaces instant close with a proper confirmation
   - Shows asset ID, stamps close date, reassures tech the action is reversible
   - Green confirm button distinct from destructive red delete button
-- **Smart asset history taxonomy** — human-readable action labels replace developer language
-  - `Asset Created` — first scan of a new asset
-  - `Asset Updated` — general edit with no specific field change detected
-  - `Status Changed` — install status field changed
-  - `Condition Changed` — condition field changed
-  - `RMA Opened` — RMA status changed from None to active
-  - `Warranty Updated` — warranty date changed
-  - `Site Transfer` — dedicated transfer workflow
-  - `RMA Closed` — RMA marked as closed
-  - `Photos Added` — photos attached via asset register modal
+- **Smart asset history taxonomy** — human-readable action labels
+  - `Asset Created`, `Asset Updated`, `Status Changed`, `Condition Changed`, `RMA Opened`, `Warranty Updated`, `Site Transfer`, `RMA Closed`, `Photos Added`
   - Multiple changes in one edit chain together: e.g. `Status Changed · Condition Changed`
+- **Before/after diff in history** — every history entry stores `diff`, `before`, and `after` fields
+  - `openHistory()` renders inline strikethrough (before) → cyan bold (after) diff lines
+- **`logNotification()` function** — every significant asset mutation inserts a row to Supabase `notifications` table
 - **localStorage history migrated to Supabase** — existing history records pushed to cloud
 
 ### UI / Design
 - **Custom dropdown components** — all native `<select>` elements replaced with fully custom div-based dropdowns
-  - No more white flash on open
-  - Arrow stays visible at all times, rotates on open/close
-  - Consistent dark theme, cyan highlight on selected option
-  - Applies to: Assets tab site filter, Scan tab site filter, Log tab technician filter, Tools tab label site filter, Login technician selector
 - **Login screen dropdown restyled** — matches app color scheme, smooth open/close
-- **Isolated horizontal table scroll** — Assets tab toolbar (title, search, site filter) stays stationary while only the table scrolls horizontally
-- **Sticky column headers** — table column headers stay visible as you scroll right
+- **Isolated horizontal table scroll** — Assets tab toolbar stays stationary while only the table scrolls
+- **Sticky column headers** — table column headers stay visible while scrolling
 - **Custom scrollbar styling** — thin, blue, matches color scheme across all scrollable areas
-- **Scrollbar position fixed** — horizontal scrollbar pinned to bottom of browser viewport
-- **Tech name column** — reverted to white text for better readability
-- **RMA escalation visual** — red left border on critical rows, badge above action buttons
+- **Scrollbar position fixed** — horizontal scrollbar pinned to bottom of viewport via JS `fitAssetTable()`
+- **RMA escalation visual** — red left border on critical rows
 - **Tools tab reordered** — Label Generator first, CSV Import second, Backup & Restore last
-- **Asset Register header** — simplified from "FULL ASSET REGISTER" to "ASSET REGISTER"
-- **CSV export buttons removed** — removed from Assets tab, Scan tab, and Log tab toolbars
+- **Asset Register header** — simplified to "ASSET REGISTER"
+- **CSV export buttons removed** — removed from Assets, Scan, and Log tab toolbars
 
 ### Fixed
-- Dropdown arrow disappearing after first click — resolved by moving arrow to wrapper `::after` pseudo-element, then fully rebuilt as custom component
-- Supabase sync not completing — all data mutation functions now properly `await save()`
-- History not appearing in modal after transfer — root cause was `upsert` with `ignoreDuplicates:true` silently skipping new rows
-- Test data cleaned from Supabase — removed `Site Transfer Test`, `Manual Test`, `Edited via modal` entries
+- Dropdown arrow disappearing after first click
+- Supabase sync not completing — all mutation functions now properly `await save()`
+- History not appearing after transfer — `upsert` with `ignoreDuplicates:true` was silently skipping new rows
 
 ---
 
@@ -163,7 +197,7 @@ Format: `[vX.X] — YYYY-MM-DD — Description`
 
 ## Backlog — Planned Features
 
-### In Progress / Next Session
+### Next Up
 - 🔐 Supabase Auth — replace PIN system with proper email/password login per technician
 - 📱 Mobile optimized layout — responsive design for field use on phones
 
@@ -171,6 +205,4 @@ Format: `[vX.X] — YYYY-MM-DD — Description`
 - 📧 Warranty / RMA email or SMS alerts via Resend or Twilio
 - 📄 PDF report generation per site — for client handoffs and inspections
 - 🗺 Per-site dashboard — drill-down view per site with summary cards
-- 🔖 Photo required on Poor/Damaged — ✅ completed v4.0
-- 🔖 RMA escalation flags — ✅ completed v4.0
-- 🔖 Asset transfer between sites — ✅ completed v4.0
+- 🌐 Custom domain — das.clevelandelectric.com
