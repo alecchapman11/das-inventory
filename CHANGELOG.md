@@ -6,6 +6,50 @@ Format: `[vX.X] — YYYY-MM-DD — Description`
 
 ---
 
+## [v4.2] — 2026-03-26
+
+### Features Added
+- **🚚 In Transit (Inbound) / (Outbound) statuses** — split old generic "In Transit" into two directional statuses
+  - `In Transit (Inbound)` — bright blue pill (`.pill-inbound`, `#2E8FEF`)
+  - `In Transit (Outbound)` — amber pill (`.pill-outbound`, `#F5A623`)
+  - Updated in scan form, edit modal, inline pill dropdown, dashboard statRows, and CSV export
+- **📋 PO Number field** — new optional field on every asset
+  - Appears in scan form (`#f-po`) and edit modal (`#edit-po`)
+  - Shown as "PO #" column in both compact and full asset tables (between Serial # and Cat.)
+  - Included in CSV export as "PO Number" column
+  - Stored as `po` on asset objects; safe to read as `a.po||''`
+- **🎨 Animated login screen background (Option A)** — moving canvas grid behind the login card
+  - Blue grid lines scroll diagonally at 0.25px/frame via `requestAnimationFrame`
+  - Cyan dots at each grid intersection, fading toward edges
+  - Radial cyan glow at screen center
+  - Canvas auto-resizes on window resize
+  - Implemented via `initLoginBackground()` called at page load
+- **⏳ Animated loading screen** — full-screen overlay on login with progress bar
+  - Shows "Connecting to database… Loading assets… Loading history… Checking notifications… Almost ready…" at 160ms intervals
+  - Progress bar animates from 0% → 90% during load steps, jumps to 100% on completion
+  - Fades out with 0.3s opacity transition; resets for next login
+  - Login button shows "Signing in…" with inline spinner while active
+  - Implemented via `showLoadingScreen()` / `hideLoadingScreen()`
+
+### UI / Branding
+- **App rebranded** — removed "DAS" references throughout
+  - Browser tab: `Cleveland Electric | Inventory Management`
+  - Header logo: `Cleveland Electric // Inventory Management`
+  - Header sub: `Communications & Low Voltage Tracker`
+  - Login card: `Inventory Management` + `Communications & Low Voltage Tracker`
+  - Loading screen: `Inventory Management`
+- **Login dropdown arrow fix** — replaced SVG background-image arrow with text character `▾`
+  - `.login-custom-select` now uses `display:flex; justify-content:space-between` (CSS + inline style)
+  - Arrow rotates 180° via JS when dropdown is open
+- **Login dropdown stays closed after selection** — `event.stopPropagation()` added to all option `onclick` handlers so clicking an option no longer bubbles up to the wrapper and re-triggers `toggleLoginSelect()`
+
+### Design Pipeline (Bookmarked)
+- Option A (animated grid) — built this version
+- Option B (split-screen with stats panel) — built and reverted; not preferred
+- Option G — preferred future direction; to be designed
+
+---
+
 ## [v4.1] — 2026-03-25
 
 ### Features Added

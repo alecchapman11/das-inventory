@@ -4,11 +4,13 @@
 ---
 
 ## Project Overview
-Single-file HTML/CSS/JS web application for tracking DAS (Distributed Antenna System) equipment and accessories across multiple job sites. Built for Cleveland Electric field technicians.
+Single-file HTML/CSS/JS web application for tracking communications and low voltage equipment across multiple job sites. Built for Cleveland Electric field technicians.
 
+**App Title:** Cleveland Electric | Inventory Management
+**Subtitle:** Communications & Low Voltage Tracker
 **Live URL:** https://alecchapman11.github.io/das-inventory/
 **Repository:** https://github.com/alecchapman11/das-inventory
-**Current Version:** v4.1
+**Current Version:** v4.2
 
 ---
 
@@ -46,7 +48,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 ### Supabase Tables
 | Table | Key Columns | Notes |
 |---|---|---|
-| `assets` | `asset_id`, `type`, `category`, `status`, `site`, `condition`, `rma`, `warranty`, `tech`, `serial`, `mfr`, `model`, `zone`, `building`, `notes`, `photos`, `datein`, `dateout`, `dateinstalled`, `rmaOpenDate`, `rmaCloseDate` | Upserted on every save |
+| `assets` | `asset_id`, `type`, `category`, `status`, `site`, `condition`, `rma`, `warranty`, `tech`, `serial`, `po`, `mfr`, `model`, `zone`, `building`, `notes`, `photos`, `datein`, `dateout`, `dateinstalled`, `rmaOpenDate`, `rmaCloseDate` | Upserted on every save |
 | `scan_log` | `id`, `asset_id`, `date`, `tech`, `site`, `location`, `action` | New rows inserted; existing upserted by `id` |
 | `asset_history` | `id`, `asset_id`, `date`, `tech`, `action`, `snapshot` | `snapshot` JSONB stores status/condition/rma/notes + `diff`/`before`/`after` for full audit trail. New rows inserted and stamped with `supabaseId` to prevent re-insert |
 | `technicians` | `id`, `name`, `pin` | Upserted on save |
@@ -87,6 +89,28 @@ Always use this format when generating example or sample data.
 
 ---
 
+## Asset Fields
+### Install Status Options (ALL valid values)
+```
+Installed
+Pending
+In Storage
+In Transit (Inbound)     ← blue pill  (.pill-inbound)
+In Transit (Outbound)    ← amber pill (.pill-outbound)
+Decommissioned
+RMA Sent
+```
+**Note:** The old generic `In Transit` status was split into Inbound/Outbound in v4.2. Do not use the old value.
+
+### PO Number Field
+- Field key: `po` (on asset objects)
+- Form input IDs: `f-po` (scan form), `edit-po` (edit modal)
+- Shown in asset tables as column "PO #" between Serial # and Cat.
+- Included in CSV export as "PO Number" column
+- Optional field — use `a.po||''` when reading, never assume it exists
+
+---
+
 ## CSS Architecture
 All CSS is in a single `<style>` block at the top of `index.html`.
 
@@ -107,6 +131,17 @@ All CSS is in a single `<style>` block at the top of `index.html`.
 --text-dim:   #6B8499
 ```
 
+### Status Pill CSS Classes
+| Status | CSS Class | Color |
+|---|---|---|
+| Installed | `.pill-installed` | green |
+| Pending | `.pill-pending` | amber |
+| RMA Sent | `.pill-rma` | red |
+| Decommissioned | `.pill-decom` | slate |
+| In Storage | `.pill-storage` | blue |
+| In Transit (Inbound) | `.pill-inbound` | bright blue `#2E8FEF` |
+| In Transit (Outbound) | `.pill-outbound` | amber `#F5A623` |
+
 ### Color Usage Rules
 - **System-wide status colors** (green/amber/red) are used for pills and indicators throughout the app — DO NOT change these
 - **Dashboard only** uses a monochromatic blue palette for KPI cards and charts — intentionally different from system colors
@@ -117,8 +152,13 @@ All CSS is in a single `<style>` block at the top of `index.html`.
 ## Key JavaScript Functions
 | Function | Purpose |
 |---|---|
-| `populateTechSelect()` | Populates login dropdown from `techs` array |
-| `doLogin()` | Authenticates, loads from Supabase, stamps prevLogin, shows app |
+| `populateTechSelect()` | Populates login dropdown from `techs` array using new `loginTechOptions` ID |
+| `toggleLoginSelect()` | Opens/closes login tech dropdown; rotates `loginTechArrow` |
+| `selectLoginTech(value, label)` | Sets selected tech in login dropdown; calls `event.stopPropagation()` on options to prevent reopening |
+| `initLoginBackground()` | Creates animated canvas grid on login screen; draws scrolling blue grid + cyan intersection dots |
+| `showLoadingScreen()` | Shows full-screen loading overlay with progress bar animation (5 steps at 160ms intervals) |
+| `hideLoadingScreen()` | Fades out loading screen after data loaded; resets bar to 0% |
+| `doLogin()` | Authenticates, shows loading screen, loads from Supabase, stamps prevLogin, shows app |
 | `doLogout()` | Clears session and returns to login screen |
 | `save()` | Async — syncs all data to Supabase + localStorage |
 | `logAsset()` | Saves/updates an asset from the scan form |
@@ -154,6 +194,35 @@ All CSS is in a single `<style>` block at the top of `index.html`.
 | `exportBackup()` | Exports full JSON backup |
 | `importBackup(e)` | Restores from JSON backup |
 | `importCSV(e)` | Bulk imports from CSV |
+
+---
+
+## Login Screen
+
+### Current Design (v4.2)
+- Centered card layout on dark navy background
+- Animated canvas grid behind the card (`initLoginBackground()`) — scrolling blue grid lines + cyan dots at intersections with radial glow at center
+- Login card has cyan gradient top border bar
+- Technician dropdown uses custom flex-based select (IDs: `loginTechWrap`, `loginTechSelected`, `loginTechArrow`, `loginTechOptions`)
+- Loading screen (`#loadingScreen`) overlays full viewport after PIN auth while Supabase data loads
+
+### Login Dropdown Implementation Notes
+- `.login-custom-select` uses `display:flex` with `justify-content:space-between` (set both in CSS and inline style on element for reliability)
+- `.login-custom-options` defaults to `display:none`; toggled to `display:block` via `.open` class
+- Options use `event.stopPropagation()` before calling `selectLoginTech()` to prevent click bubbling to wrapper which would reopen the dropdown
+- Arrow element (`#loginTechArrow`) is a text character `▾`, rotated 180° via JS when open
+
+### Login Screen Design Pipeline
+Options explored for login screen redesign. Option G is the preferred future direction.
+
+| Option | Description | Status |
+|---|---|---|
+| A | Animated moving grid canvas background on centered card | ✅ Built (v4.2) |
+| B | Split-screen layout (left stats panel + right form) | ❌ Rejected — reverted |
+| C | Full-bleed site photo background with frosted glass card | Not built |
+| D | Minimal dark card, no background animation | Not built |
+| E | Animated particle/constellation background | Not built |
+| G | **(Preferred)** — TBD by user | Preferred direction |
 
 ---
 
@@ -231,6 +300,7 @@ When completing a change order:
 - The `save()` function — always call this after modifying any data
 - CSS variable names in `:root`
 - The `supabaseId` field on history entries — controls insert vs upsert routing
+- The old `In Transit` status — replaced by Inbound/Outbound; do not re-introduce
 
 ---
 
@@ -239,10 +309,12 @@ When completing a change order:
 - Photos stored as base64 — large photos can fill localStorage quickly
 - No offline mode — Supabase unavailability falls back to localStorage read-only
 - Since-last-visit only tracks changes by *other* techs (by design)
+- Canvas animation runs continuously while login screen is visible (no pause on hide)
 
 ---
 
 ## Planned Future Features
+- **Login screen Option G** — preferred visual redesign direction (TBD)
 - Supabase Auth — replace PIN system with proper per-tech email/password login
 - Mobile-optimized layout — responsive design for field use on phones
 - Warranty / RMA email or SMS alerts via Resend or Twilio
