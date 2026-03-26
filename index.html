@@ -382,6 +382,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .login-btn-loading{position:relative;pointer-events:none;opacity:0.8}
 .login-btn-loading::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
+.login-bg-canvas{position:absolute;inset:0;z-index:0;pointer-events:none}
+#loginScreen .login-box{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -2164,6 +2166,54 @@ async function confirmDuplicate() {
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
+function initLoginBackground() {
+  const screen = document.getElementById('loginScreen');
+  if (!screen) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'login-bg-canvas';
+  screen.insertBefore(canvas, screen.firstChild);
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  });
+  const spacing = 44;
+  let offset = 0;
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    const o = offset % spacing;
+    ctx.strokeStyle = 'rgba(30,111,191,0.08)';
+    ctx.lineWidth = 1;
+    for (let x = -spacing + o; x < w + spacing; x += spacing) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = -spacing + o; y < h + spacing; y += spacing) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let x = -spacing + o; x < w + spacing; x += spacing) {
+      for (let y = -spacing + o; y < h + spacing; y += spacing) {
+        const distX = x - w/2;
+        const distY = y - h/2;
+        const dist = Math.sqrt(distX*distX + distY*distY);
+        const maxDist = Math.sqrt((w/2)*(w/2) + (h/2)*(h/2));
+        const alpha = Math.max(0, 0.25 - (dist/maxDist)*0.2);
+        ctx.fillStyle = `rgba(0,194,212,${alpha})`;
+        ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    const grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 380);
+    grad.addColorStop(0, 'rgba(0,194,212,0.05)');
+    grad.addColorStop(1, 'rgba(0,194,212,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    offset += 0.25;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+initLoginBackground();
 populateTechSelect();
 </script>
 <div class="modal-overlay" id="rmaCloseModal">
