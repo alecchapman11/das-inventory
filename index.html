@@ -883,8 +883,8 @@ function populateTechSelect() {
   const dropdown = document.getElementById('loginTechOptions');
   if (!dropdown) return;
   dropdown.innerHTML = [
-    `<div class="login-custom-option" data-value="" onclick="selectLoginTech('','— Choose your name —')">— Choose your name —</div>`,
-    ...techs.map(t => `<div class="login-custom-option" data-value="${t.name}" onclick="selectLoginTech('${t.name.replace(/'/g,"\\'")}','${t.name.replace(/'/g,"\\'")}')">${t.name}</div>`)
+    `<div class="login-custom-option" data-value="" onclick="event.stopPropagation();selectLoginTech('','— Choose your name —')">— Choose your name —</div>`,
+    ...techs.map(t => `<div class="login-custom-option" data-value="${t.name}" onclick="event.stopPropagation();selectLoginTech('${t.name.replace(/'/g,"\\'")}','${t.name.replace(/'/g,"\\'")}')">${t.name}</div>`)
   ].join('');
 }
 function toggleLoginSelect() {
