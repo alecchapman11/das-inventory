@@ -128,6 +128,8 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 .pill-pending{background:rgba(245,166,35,0.15);color:#F5A623;border:1px solid rgba(245,166,35,0.3)}
 .pill-rma{background:rgba(229,83,75,0.15);color:#E5534B;border:1px solid rgba(229,83,75,0.3)}
 .pill-storage{background:rgba(30,111,191,0.15);color:#2E8FEF;border:1px solid rgba(30,111,191,0.3)}
+.pill-inbound{background:rgba(46,143,239,0.15);color:#2E8FEF;border:1px solid rgba(46,143,239,0.3)}
+.pill-outbound{background:rgba(245,166,35,0.15);color:#F5A623;border:1px solid rgba(245,166,35,0.3)}
 .pill-decom{background:rgba(107,132,153,0.15);color:#8FA3BC;border:1px solid rgba(107,132,153,0.3)}
 .pill-none{background:rgba(107,132,153,0.1);color:#8FA3BC;border:1px solid rgba(107,132,153,0.2)}
 .pill-good{background:rgba(15,168,110,0.12);color:#0FA86E}
@@ -470,6 +472,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
         <div class="form-group"><label>Model</label><input type="text" id="f-model" placeholder="Model #"></div>
         <div class="form-group"><label>Serial Number</label><input type="text" id="f-serial" placeholder="S/N"></div>
       </div>
+      <div class="form-group"><label>PO Number</label><input type="text" id="f-po" placeholder="e.g. PO-2024-0042"></div>
       <div class="form-group"><label>Site / Project</label><input type="text" id="f-site" placeholder="e.g. Site A – Downtown Tower"></div>
       <div class="form-grid">
         <div class="form-group"><label>Building</label><input type="text" id="f-building" placeholder="Building"></div>
@@ -477,7 +480,7 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       </div>
       <div class="form-grid">
         <div class="form-group"><label>Install Status</label>
-          <select id="f-status"><option value="">Select…</option><option>Installed</option><option>Pending</option><option>In Storage</option><option>In Transit</option><option>Decommissioned</option><option>RMA Sent</option></select>
+          <select id="f-status"><option value="">Select…</option><option>Installed</option><option>Pending</option><option>In Storage</option><option>In Transit (Inbound)</option><option>In Transit (Outbound)</option><option>Decommissioned</option><option>RMA Sent</option></select>
         </div>
         <div class="form-group"><label>Condition</label>
           <select id="f-condition"><option value="">Select…</option><option>New</option><option>Good</option><option>Fair</option><option>Poor</option><option>Damaged</option><option>Unknown</option></select>
@@ -667,10 +670,11 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       <div class="form-group"><label>Manufacturer</label><input type="text" id="edit-mfr"></div>
     </div>
     <div class="form-grid mg-b"><div class="form-group"><label>Model</label><input type="text" id="edit-model"></div><div class="form-group"><label>Serial Number</label><input type="text" id="edit-serial"></div></div>
+<div class="form-group mg-b"><label>PO Number</label><input type="text" id="edit-po" placeholder="e.g. PO-2024-0042"></div>
     <div class="form-group mg-b"><label>Site / Project</label><input type="text" id="edit-site"></div>
     <div class="form-grid mg-b"><div class="form-group"><label>Building</label><input type="text" id="edit-building"></div><div class="form-group"><label>Floor / Zone</label><input type="text" id="edit-zone"></div></div>
     <div class="form-grid mg-b">
-      <div class="form-group"><label>Install Status</label><select id="edit-status"><option>Installed</option><option>Pending</option><option>In Storage</option><option>In Transit</option><option>Decommissioned</option><option>RMA Sent</option></select></div>
+      <div class="form-group"><label>Install Status</label><select id="edit-status"><option>Installed</option><option>Pending</option><option>In Storage</option><option>In Transit (Inbound)</option><option>In Transit (Outbound)</option><option>Decommissioned</option><option>RMA Sent</option></select></div>
       <div class="form-group"><label>Condition</label><select id="edit-condition"><option>New</option><option>Good</option><option>Fair</option><option>Poor</option><option>Damaged</option><option>Unknown</option></select></div>
     </div>
     <div class="form-grid mg-b">
@@ -1090,7 +1094,7 @@ document.getElementById('barcodeInput').addEventListener('keydown', function(e) 
 function prefillForm(a) {
   const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
   set('f-type',a.type); set('f-category',a.category); set('f-mfr',a.mfr); set('f-model',a.model);
-  set('f-serial',a.serial); set('f-site',a.site); set('f-building',a.building); set('f-zone',a.zone);
+  set('f-serial',a.serial); set('f-po',a.po); set('f-site',a.site); set('f-building',a.building); set('f-zone',a.zone);
   set('f-status',a.status); set('f-condition',a.condition); set('f-rma',a.rma||'None');
   set('f-warranty',a.warranty); set('f-datein',a.datein); set('f-dateout',a.dateout);
   set('f-dateinstalled',a.dateinstalled); set('f-notes',a.notes);
@@ -1128,7 +1132,7 @@ async function logAsset() {
   const existing=assets.find(a=>a.id===id);
   const entry={
     id,type:g('f-type'),category:g('f-category'),mfr:g('f-mfr'),model:g('f-model'),
-    serial:g('f-serial'),site:g('f-site'),building:g('f-building'),zone:g('f-zone'),
+    serial:g('f-serial'),po:g('f-po'),site:g('f-site'),building:g('f-building'),zone:g('f-zone'),
     status:g('f-status'),condition:g('f-condition'),rma:rmaVal,warranty:g('f-warranty'),
     datein:g('f-datein'),dateout:g('f-dateout'),dateinstalled:g('f-dateinstalled'),
     notes:g('f-notes'),photos:[...currentPhotos],date:new Date().toISOString(),tech:currentTech,
@@ -1168,14 +1172,14 @@ async function logAsset() {
 }
 
 function clearForm() {
-  ['barcodeInput','f-type','f-mfr','f-model','f-serial','f-site','f-building','f-zone','f-warranty','f-notes','f-dateout','f-dateinstalled'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['barcodeInput','f-type','f-mfr','f-model','f-serial','f-po','f-site','f-building','f-zone','f-warranty','f-notes','f-dateout','f-dateinstalled'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['f-category','f-status','f-condition'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-rma').value='None'; setTodayDates();
   currentPhotos=[]; renderPhotoPreview(); document.getElementById('barcodeInput').focus();
 }
 
 // ── PILLS ──────────────────────────────────────────────────────────────────
-function statusPill(s){const m={'Installed':'pill-installed','Pending':'pill-pending','RMA Sent':'pill-rma','Decommissioned':'pill-decom','In Storage':'pill-storage','In Transit':'pill-storage'};return`<span class="pill ${m[s]||'pill-none'}">${s||'—'}</span>`;}
+function statusPill(s){const m={'Installed':'pill-installed','Pending':'pill-pending','RMA Sent':'pill-rma','Decommissioned':'pill-decom','In Storage':'pill-storage','In Transit (Inbound)':'pill-inbound','In Transit (Outbound)':'pill-outbound'};return`<span class="pill ${m[s]||'pill-none'}">${s||'—'}</span>`;}
 function condPill(c){const m={'Good':'pill-good','New':'pill-good','Fair':'pill-fair','Poor':'pill-poor','Damaged':'pill-poor'};return`<span class="pill ${m[c]||'pill-none'}">${c||'—'}</span>`;}
 function rmaPill(r){if(!r||r==='None')return`<span style="color:var(--text-dim);font-size:11px">—</span>`;return`<span class="pill pill-rma">${r}</span>`;}
 
@@ -1228,9 +1232,9 @@ function renderAssetsFull(q) {
 function tableHTML(rows,full) {
   if (!rows.length) return`<div class="empty-state"><div class="icon">◎</div>No assets found</div>`;
   const cols=full
-    ?['actions','id','type','serial','category','mfr','model','site','zone','status','condition','rma','datein','dateinstalled','warranty','tech','notes']
-    :['actions','id','type','serial','site','zone','status','condition','rma','datein','notes'];
-  const lbl={actions:'',id:'Asset ID',type:'Equipment',serial:'Serial #',category:'Cat.',mfr:'Mfr.',model:'Model',site:'Site',zone:'Zone',status:'Status',condition:'Cond.',rma:'RMA',datein:'Scanned In',dateinstalled:'Installed',warranty:'Warranty',tech:'Technician',notes:'Notes'};
+    ?['actions','id','type','serial','po','category','mfr','model','site','zone','status','condition','rma','datein','dateinstalled','warranty','tech','notes']
+    :['actions','id','type','serial','po','site','zone','status','condition','rma','datein','notes'];
+  const lbl={actions:'',id:'Asset ID',type:'Equipment',serial:'Serial #',po:'PO #',category:'Cat.',mfr:'Mfr.',model:'Model',site:'Site',zone:'Zone',status:'Status',condition:'Cond.',rma:'RMA',datein:'Scanned In',dateinstalled:'Installed',warranty:'Warranty',tech:'Technician',notes:'Notes'};
   let h=`<table><thead><tr>${cols.map(c=>`<th>${lbl[c]}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(a=>{
     const rc=(a.rma&&a.rma!=='None')?' row-rma':'';
@@ -1251,7 +1255,7 @@ function tableHTML(rows,full) {
         </div>
       </td>`;
       if (c==='id')        return`<td class="asset-id">${a[c]}</td>`;
-      if (c==='status') return`<td style="overflow:visible"><div class="pill-wrap"><span onclick="openPillDropdown('${a.id}','status','${a[c]}',['Installed','Pending','In Storage','In Transit','Decommissioned','RMA Sent'],event)" style="cursor:pointer">${statusPill(a[c])}</span></div></td>`;
+      if (c==='status') return`<td style="overflow:visible"><div class="pill-wrap"><span onclick="openPillDropdown('${a.id}','status','${a[c]}',['Installed','Pending','In Storage','In Transit (Inbound)','In Transit (Outbound)','Decommissioned','RMA Sent'],event)" style="cursor:pointer">${statusPill(a[c])}</span></div></td>`;
       if (c==='condition') return`<td style="overflow:visible"><div class="pill-wrap"><span onclick="openPillDropdown('${a.id}','condition','${a[c]}',['New','Good','Fair','Poor','Damaged','Unknown'],event)" style="cursor:pointer">${condPill(a[c])}</span></div></td>`;
       if (c==='rma')       return`<td>${rmaPill(a[c])}</td>`;
       if (c==='notes')     return noteCell(a[c]);
@@ -1268,7 +1272,7 @@ function openEdit(id) {
   const a=assets.find(x=>x.id===id); if (!a) return;
   const set=(eid,val)=>{const el=document.getElementById(eid);if(el)el.value=val||'';};
   set('edit-id-orig',a.id);set('edit-id',a.id);set('edit-type',a.type);set('edit-category',a.category);
-  set('edit-mfr',a.mfr);set('edit-model',a.model);set('edit-serial',a.serial);set('edit-site',a.site);
+  set('edit-mfr',a.mfr);set('edit-model',a.model);set('edit-serial',a.serial);set('edit-po',a.po||'');set('edit-site',a.site);
   set('edit-building',a.building);set('edit-zone',a.zone);set('edit-status',a.status);
   set('edit-condition',a.condition);set('edit-rma',a.rma||'None');set('edit-warranty',a.warranty);
   set('edit-dateinstalled',a.dateinstalled);set('edit-datein',a.datein);set('edit-notes',a.notes);
@@ -1279,7 +1283,7 @@ async function saveEdit() {
   const idx=assets.findIndex(a=>a.id===orig); if (idx<0) return;
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const before={...assets[idx]};
-  const updated={...assets[idx],id:g('edit-id'),type:g('edit-type'),category:g('edit-category'),mfr:g('edit-mfr'),model:g('edit-model'),serial:g('edit-serial'),site:g('edit-site'),building:g('edit-building'),zone:g('edit-zone'),status:g('edit-status'),condition:g('edit-condition'),rma:g('edit-rma'),warranty:g('edit-warranty'),dateinstalled:g('edit-dateinstalled'),datein:g('edit-datein'),notes:g('edit-notes')};
+  const updated={...assets[idx],id:g('edit-id'),type:g('edit-type'),category:g('edit-category'),mfr:g('edit-mfr'),model:g('edit-model'),serial:g('edit-serial'),po:g('edit-po'),site:g('edit-site'),building:g('edit-building'),zone:g('edit-zone'),status:g('edit-status'),condition:g('edit-condition'),rma:g('edit-rma'),warranty:g('edit-warranty'),dateinstalled:g('edit-dateinstalled'),datein:g('edit-datein'),notes:g('edit-notes')};
   const diff = buildDiff(before, updated);
   const action = (()=>{
     const changes=[];
@@ -1508,7 +1512,7 @@ function renderDash() {
       return`<div class="stat-row"><span class="stat-label">${item}</span><span class="stat-num">${n}</span></div><div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(n/tot*100)}%"></div></div>`;
     }).join('');
   }
-  statRows('stat-status',['Installed','Pending','In Storage','In Transit','Decommissioned','RMA Sent'],'status');
+  statRows('stat-status',['Installed','Pending','In Storage','In Transit (Inbound)','In Transit (Outbound)','Decommissioned','RMA Sent'],'status');
   statRows('stat-condition',['New','Good','Fair','Poor','Damaged','Unknown'],'condition');
 
   // Technician activity — pulled from Supabase notifications
@@ -1692,8 +1696,8 @@ function importCSV(e){
 
 // ── CSV EXPORT ─────────────────────────────────────────────────────────────
 function exportCSV(){
-  const hdr=['Asset ID','Type','Category','Manufacturer','Model','Serial','Site','Building','Zone','Status','Condition','RMA','Warranty','Date In','Date Out','Date Installed','Technician','Notes'];
-  const rows=assets.map(a=>[a.id,a.type,a.category,a.mfr,a.model,a.serial,a.site,a.building,a.zone,a.status,a.condition,a.rma,a.warranty,a.datein,a.dateout,a.dateinstalled,a.tech,a.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`));
+  const hdr=['Asset ID','Type','Category','Manufacturer','Model','Serial','PO Number','Site','Building','Zone','Status','Condition','RMA','Warranty','Date In','Date Out','Date Installed','Technician','Notes'];
+  const rows=assets.map(a=>[a.id,a.type,a.category,a.mfr,a.model,a.serial,a.po||'',a.site,a.building,a.zone,a.status,a.condition,a.rma,a.warranty,a.datein,a.dateout,a.dateinstalled,a.tech,a.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`));
   dl([hdr,...rows].map(r=>r.join(',')).join('\n'),'CE_DAS_Asset_Register.csv');
 }
 function exportLogCSV(){
