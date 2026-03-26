@@ -15,21 +15,8 @@ body{font-family:var(--sans);background:var(--navy);color:var(--text);min-height
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(30,111,191,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(30,111,191,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
 
 /* LOGIN */
-#loginScreen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:stretch;z-index:1000;overflow:hidden}
-.login-panel{flex:1;min-width:0;background:var(--navy-mid);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
-.login-panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(30,111,191,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,111,191,0.06) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
-.login-panel::after{content:'';position:absolute;bottom:-120px;left:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(0,194,212,0.12) 0%,transparent 70%);pointer-events:none}
-.login-panel-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--cyan);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;position:relative}
-.login-panel-title{font-size:42px;font-weight:600;color:var(--text);line-height:1.1;margin-bottom:12px;position:relative}
-.login-panel-title span{color:var(--cyan)}
-.login-panel-sub{font-size:14px;color:var(--text-dim);margin-bottom:48px;font-family:var(--mono);letter-spacing:0.06em;position:relative}
-.login-panel-stats{display:flex;flex-direction:column;gap:16px;width:100%;max-width:320px;position:relative}
-.login-stat{display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px}
-.login-stat-icon{font-size:18px;width:36px;height:36px;border-radius:8px;background:rgba(0,194,212,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.login-stat-label{font-size:11px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.06em;margin-bottom:2px}
-.login-stat-value{font-size:16px;font-weight:600;color:var(--text);font-family:var(--mono)}
-.login-form-panel{width:42%;min-width:420px;max-width:520px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:60px;background:var(--navy);border-left:1px solid var(--border)}
-.login-box{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:48px 44px;width:100%;position:relative;overflow:visible}
+#loginScreen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:48px 44px;width:420px;position:relative;overflow:visible}
 .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
 .login-logo{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:6px}
 .login-title{font-size:22px;font-weight:600;color:var(--text);margin-bottom:8px;line-height:1.2}
@@ -401,51 +388,21 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div class="login-panel">
-    <div class="login-panel-logo">Cleveland Electric</div>
-    <div class="login-panel-title">Inventory<br><span>Management</span></div>
-    <div class="login-panel-sub">Communications & Low Voltage Tracker</div>
-    <div class="login-panel-stats">
-      <div class="login-stat">
-        <div class="login-stat-icon">▤</div>
-        <div>
-          <div class="login-stat-label">Total Assets</div>
-          <div class="login-stat-value" id="loginStatAssets">—</div>
-        </div>
-      </div>
-      <div class="login-stat">
-        <div class="login-stat-icon">◈</div>
-        <div>
-          <div class="login-stat-label">Active Sites</div>
-          <div class="login-stat-value" id="loginStatSites">—</div>
-        </div>
-      </div>
-      <div class="login-stat">
-        <div class="login-stat-icon">◎</div>
-        <div>
-          <div class="login-stat-label">Last Activity</div>
-          <div class="login-stat-value" id="loginStatActivity" style="font-size:12px">—</div>
-        </div>
-      </div>
+  <div class="login-box">
+    <div class="login-logo">Cleveland Electric</div>
+    <div class="login-title">Inventory<br>Management</div>
+    <div class="login-sub">Communications & Low Voltage Tracker</div>
+    <label>Select Technician</label>
+    <div class="login-custom-select" id="loginTechWrap" onclick="toggleLoginSelect()">
+      <div class="login-custom-selected" id="loginTechSelected">— Choose your name —</div>
+      <div class="login-custom-arrow" id="loginTechArrow">▾</div>
+      <div class="login-custom-options" id="loginTechOptions"></div>
     </div>
-  </div>
-  <div class="login-form-panel">
-    <div class="login-box">
-      <div class="login-logo">Sign In</div>
-      <div class="login-title">Welcome back</div>
-      <div class="login-sub">Select your name and enter your PIN to continue</div>
-      <label>Select Technician</label>
-      <div class="login-custom-select" id="loginTechWrap" onclick="toggleLoginSelect()">
-        <div class="login-custom-selected" id="loginTechSelected">— Choose your name —</div>
-        <div class="login-custom-arrow" id="loginTechArrow">▾</div>
-        <div class="login-custom-options" id="loginTechOptions"></div>
-      </div>
-      <label>PIN (4 digits)</label>
-      <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" style="display:block;width:100%;background:#0D1B2A;color:#D8E6F3;border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:10px 12px;font-size:13px;font-family:sans-serif;margin-bottom:18px;outline:none">
-      <div class="login-err" id="loginErr">Incorrect PIN. Please try again.</div>
-      <button class="login-btn" onclick="doLogin()">Sign In</button>
-      <div class="add-tech-link" onclick="openModal('addTechModal')">+ Add new technician</div>
-    </div>
+    <label>PIN (4 digits)</label>
+    <input type="password" id="loginPin" maxlength="4" placeholder="••••" inputmode="numeric" style="display:block;width:100%;background:#0D1B2A;color:#D8E6F3;border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:10px 12px;font-size:13px;font-family:sans-serif;margin-bottom:18px;outline:none">
+    <div class="login-err" id="loginErr">Incorrect PIN. Please try again.</div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="add-tech-link" onclick="openModal('addTechModal')">+ Add new technician</div>
   </div>
 </div>
 
@@ -2206,33 +2163,8 @@ async function confirmDuplicate() {
   duplicateSourceId = null;
 }
 
-// ── LOGIN STATS ────────────────────────────────────────────────────────────
-async function populateLoginStats() {
-  try {
-    const {data: assetData} = await db.from('assets').select('id, site', {count:'exact'});
-    const {data: notifData} = await db.from('notifications').select('tech, created_at').order('created_at',{ascending:false}).limit(1);
-    if (assetData) {
-      document.getElementById('loginStatAssets').textContent = assetData.length;
-      const sites = new Set(assetData.map(a => a.site).filter(Boolean));
-      document.getElementById('loginStatSites').textContent = sites.size;
-    }
-    if (notifData?.[0]) {
-      const n = notifData[0];
-      const timeAgo = (() => {
-        const mins = Math.floor((new Date() - new Date(n.created_at)) / 60000);
-        if (mins < 60) return mins + 'm ago';
-        const hrs = Math.floor(mins/60);
-        if (hrs < 24) return hrs + 'h ago';
-        return Math.floor(hrs/24) + 'd ago';
-      })();
-      document.getElementById('loginStatActivity').textContent = n.tech + ' · ' + timeAgo;
-    }
-  } catch(e) {}
-}
-
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateTechSelect();
-populateLoginStats();
 </script>
 <div class="modal-overlay" id="rmaCloseModal">
   <div class="modal" style="max-width:420px">
