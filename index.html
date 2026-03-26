@@ -16,7 +16,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 /* LOGIN */
 #loginScreen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:stretch;z-index:1000}
-.login-panel{flex:1;background:var(--navy-mid);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
+.login-panel{flex:1;min-width:0;background:var(--navy-mid);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
 .login-panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(30,111,191,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,111,191,0.06) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
 .login-panel::after{content:'';position:absolute;bottom:-120px;left:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(0,194,212,0.12) 0%,transparent 70%);pointer-events:none}
 .login-panel-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--cyan);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;position:relative}
@@ -28,7 +28,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .login-stat-icon{font-size:18px;width:36px;height:36px;border-radius:8px;background:rgba(0,194,212,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .login-stat-label{font-size:11px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.06em;margin-bottom:2px}
 .login-stat-value{font-size:16px;font-weight:600;color:var(--text);font-family:var(--mono)}
-.login-form-panel{width:480px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:60px;background:var(--navy)}
+.login-form-panel{width:42%;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:60px;background:var(--navy);border-left:1px solid var(--border)}
 .login-box{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:48px 44px;width:100%;position:relative;overflow:visible}
 .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
 .login-logo{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:6px}
@@ -335,6 +335,8 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .login-custom-trigger.open .login-custom-arrow{transform:rotate(180deg)}
 .login-custom-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1B2D42;border:1px solid #1E6FBF;border-radius:6px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,0.5);overflow:hidden;max-height:200px;overflow-y:auto}
 .login-custom-dropdown.open{display:block}
+.login-custom-options{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1B2D42;border:1px solid #1E6FBF;border-radius:6px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,0.5);overflow:hidden;max-height:200px;overflow-y:auto}
+.login-custom-options.open{display:block}
 .login-custom-option{padding:10px 14px;font-size:13px;font-family:sans-serif;color:#D8E6F3;cursor:pointer;transition:background 0.12s}
 .login-custom-option:hover{background:rgba(30,111,191,0.2)}
 .login-custom-option.selected{color:#00C2D4;background:rgba(0,194,212,0.08)}
