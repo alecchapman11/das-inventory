@@ -369,6 +369,17 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .pill-dropdown-item{display:block;width:100%;padding:7px 12px;font-size:11px;font-family:var(--mono);font-weight:600;cursor:pointer;background:none;border:none;text-align:left;transition:background 0.12s;white-space:nowrap;color:var(--text)}
 .pill-dropdown-item:hover{background:rgba(30,111,191,0.15)}
 .pill-wrap{position:relative;display:inline-block}
+#loadingScreen{position:fixed;inset:0;background:var(--navy);z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+#loadingScreen.show{display:flex}
+.loading-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--cyan);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:4px}
+.loading-title{font-size:20px;font-weight:600;color:var(--text);font-family:var(--sans)}
+.loading-bar-wrap{width:280px;height:3px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:3px;width:0%;transition:width 0.4s ease}
+.loading-status{font-family:var(--mono);font-size:11px;color:var(--slate);letter-spacing:0.06em;min-height:16px;text-align:center}
+.loading-spinner{width:36px;height:36px;border:2px solid rgba(0,194,212,0.2);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-btn-loading{position:relative;pointer-events:none;opacity:0.8}
+.login-btn-loading::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
 </style>
 </head>
 <body>
@@ -909,6 +920,9 @@ async function doLogin() {
     } catch(e) {}
   }
   if (!tech) { document.getElementById('loginErr').style.display='block'; return; }
+  const loginBtn = document.querySelector('.login-btn');
+  if (loginBtn) { loginBtn.textContent = 'Signing in...'; loginBtn.classList.add('login-btn-loading'); }
+  showLoadingScreen();
   currentTech = name;
   try {
     const {data:remoteAssets} = await db.from('assets').select('*');
@@ -946,6 +960,8 @@ async function doLogin() {
   document.getElementById('loginErr').style.display = 'none';
   setTodayDates(); populateSiteFilters(); populateLogTechFilter();
   checkWarrantyBanner(); renderAssets('');
+  hideLoadingScreen();
+  if (loginBtn) { loginBtn.textContent = 'Sign In'; loginBtn.classList.remove('login-btn-loading'); }
   const prevLogin = localStorage.getItem(getLastLoginKey());
   renderNotifBell();
   setTimeout(async () => {
@@ -1991,6 +2007,48 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.pill-wrap')) closePillDropdown();
 });
 
+// ── LOADING SCREEN ─────────────────────────────────────────────────────────
+function showLoadingScreen() {
+  const screen = document.getElementById('loadingScreen');
+  const bar = document.getElementById('loadingBar');
+  const status = document.getElementById('loadingStatus');
+  screen.classList.add('show');
+  const steps = [
+    {pct:15, msg:'Connecting to database...'},
+    {pct:35, msg:'Loading assets...'},
+    {pct:55, msg:'Loading history...'},
+    {pct:75, msg:'Checking notifications...'},
+    {pct:90, msg:'Almost ready...'}
+  ];
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < steps.length) {
+      bar.style.width = steps[i].pct + '%';
+      status.textContent = steps[i].msg;
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 160);
+  return interval;
+}
+function hideLoadingScreen() {
+  const screen = document.getElementById('loadingScreen');
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '100%';
+  document.getElementById('loadingStatus').textContent = 'Ready!';
+  setTimeout(() => {
+    screen.style.transition = 'opacity 0.3s ease';
+    screen.style.opacity = '0';
+    setTimeout(() => {
+      screen.classList.remove('show');
+      screen.style.opacity = '1';
+      screen.style.transition = '';
+      bar.style.width = '0%';
+    }, 300);
+  }, 200);
+}
+
 // ── SINCE LAST VISIT ───────────────────────────────────────────────────────
 function getLastLoginKey() { return 'das_last_login_' + (currentTech||'').replace(/\s/g,'_'); }
 function saveLastLogin() { localStorage.setItem(getLastLoginKey(), new Date().toISOString()); }
@@ -2161,6 +2219,15 @@ populateTechSelect();
       <button class="modal-btn modal-btn-primary" onclick="confirmDuplicate()">⎘ Create Duplicate</button>
     </div>
   </div>
+</div>
+<div id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div style="text-align:center">
+    <div class="loading-logo">Cleveland Electric</div>
+    <div class="loading-title">DAS Inventory</div>
+  </div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
+  <div class="loading-status" id="loadingStatus">Connecting...</div>
 </div>
 </body>
 </html>
