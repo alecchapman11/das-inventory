@@ -358,6 +358,30 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
 .activity-detail{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .activity-meta{font-size:10px;font-family:var(--mono);color:var(--slate);margin-top:3px}
 .activity-empty{text-align:center;padding:24px;color:var(--text-dim);font-size:13px}
+.activity-container{max-height:380px;overflow-y:auto;overflow-x:hidden}
+.activity-filter-tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.activity-filter-tab{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:600;font-family:var(--mono);cursor:pointer;border:1px solid var(--border);color:var(--slate);background:none;transition:all 0.15s;letter-spacing:0.04em;text-transform:uppercase}
+.activity-filter-tab:hover{border-color:var(--blue);color:var(--text)}
+.activity-filter-tab.active{background:rgba(30,111,191,0.15);border-color:rgba(30,111,191,0.4);color:var(--blue-bright)}
+.activity-day-header{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text-dim);letter-spacing:0.12em;text-transform:uppercase;padding:10px 0 6px;border-bottom:1px solid rgba(255,255,255,0.04);margin-bottom:4px}
+.activity-group{border:1px solid rgba(255,255,255,0.04);border-radius:6px;margin-bottom:6px;overflow:hidden}
+.activity-group-header{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;transition:background 0.12s}
+.activity-group-header:hover{background:rgba(255,255,255,0.03)}
+.activity-group-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.activity-group-info{flex:1;min-width:0}
+.activity-group-title{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.activity-group-meta{font-size:10px;color:var(--text-dim);font-family:var(--mono);margin-top:1px}
+.activity-group-count{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--slate);background:rgba(255,255,255,0.06);padding:2px 7px;border-radius:10px;flex-shrink:0}
+.activity-group-arrow{font-size:10px;color:var(--text-dim);transition:transform 0.2s;flex-shrink:0}
+.activity-group-arrow.open{transform:rotate(180deg)}
+.activity-group-items{display:none;border-top:1px solid rgba(255,255,255,0.04)}
+.activity-group-items.open{display:block}
+.activity-sub-item{display:flex;align-items:flex-start;gap:10px;padding:7px 12px 7px 20px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.activity-sub-item:last-child{border-bottom:none}
+.activity-sub-action{font-size:11px;color:var(--text);margin-bottom:1px}
+.activity-sub-meta{font-size:10px;color:var(--text-dim);font-family:var(--mono)}
+.activity-load-more{text-align:center;padding:10px;font-size:11px;font-family:var(--mono);color:var(--slate);cursor:pointer;border-top:1px solid var(--border);transition:color 0.15s}
+.activity-load-more:hover{color:var(--cyan)}
 .notif-since-wrap{background:rgba(0,194,212,0.06);border-bottom:1px solid rgba(0,194,212,0.15)}
 .notif-checking{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,194,212,0.04);border-bottom:1px solid rgba(0,194,212,0.1);font-family:var(--mono);font-size:11px;color:var(--slate)}
 .notif-checking-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blink 1s infinite}
@@ -612,9 +636,16 @@ tr.row-warranty-exp td{background:rgba(229,83,75,0.04)}
       <div class="dash-card"><div class="dash-card-title">Technician Activity</div><div id="stat-tech"></div></div>
     </div>
     <div class="dash-card" style="margin-bottom:24px">
-      <div class="dash-card-title">RECENT ACTIVITY</div>
-      <div id="stat-activity"><div class="activity-empty">Loading...</div></div>
-    </div>
+  <div class="dash-card-title">RECENT ACTIVITY</div>
+  <div class="activity-filter-tabs" id="activityFilterTabs">
+    <button class="activity-filter-tab active" onclick="setActivityFilter('all',this)">All</button>
+    <button class="activity-filter-tab" onclick="setActivityFilter('asset',this)">Assets</button>
+    <button class="activity-filter-tab" onclick="setActivityFilter('status',this)">Status</button>
+    <button class="activity-filter-tab" onclick="setActivityFilter('rma',this)">RMA</button>
+    <button class="activity-filter-tab" onclick="setActivityFilter('transfer',this)">Transfers</button>
+  </div>
+  <div class="activity-container" id="stat-activity"><div class="activity-empty">Loading...</div></div>
+</div>
   </div>
 </div>
 
@@ -1569,43 +1600,118 @@ function renderDash() {
   })();
 
   // Recent Activity
+  let activityFilter = 'all';
+  let activityData = [];
+  let activityShowing = 10;
+  function setActivityFilter(filter, btn) {
+    activityFilter = filter;
+    activityShowing = 10;
+    document.querySelectorAll('.activity-filter-tab').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderActivityFeed();
+  }
+  function toggleActivityGroup(id) {
+    const items = document.getElementById('ag-items-' + id);
+    const arrow = document.getElementById('ag-arrow-' + id);
+    if (!items) return;
+    items.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open');
+  }
+  function renderActivityFeed() {
+    const filterMap = {
+      all: () => true,
+      asset: n => n.action === 'Asset Created' || n.action === 'Asset Updated',
+      status: n => n.action && n.action.includes('Status'),
+      rma: n => n.action && n.action.includes('RMA'),
+      transfer: n => n.action === 'Site Transfer'
+    };
+    const filtered = activityData.filter(filterMap[activityFilter] || filterMap.all);
+    const icons = {'Asset Created':'✚','Asset Updated':'✎','Site Transfer':'🔄','RMA Opened':'🔴','RMA Closed':'✓','Condition Changed':'⚠','Asset Deleted':'✕','Status Changed':'✎'};
+    const iconClasses = {'Asset Created':'activity-icon-created','Asset Updated':'activity-icon-updated','Site Transfer':'activity-icon-transfer','RMA Opened':'activity-icon-rma','RMA Closed':'activity-icon-rma','Condition Changed':'activity-icon-condition','Asset Deleted':'activity-icon-deleted'};
+    if (!filtered.length) {
+      document.getElementById('stat-activity').innerHTML = '<div class="activity-empty">No activity found</div>';
+      return;
+    }
+    const days = {};
+    filtered.forEach(n => {
+      const d = new Date(n.created_at);
+      const now = new Date();
+      const diffDays = Math.floor((now - d) / 86400000);
+      const key = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Yesterday' : d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+      if (!days[key]) days[key] = [];
+      days[key].push(n);
+    });
+    let html = '';
+    let totalShown = 0;
+    for (const [day, entries] of Object.entries(days)) {
+      if (totalShown >= activityShowing) break;
+      html += `<div class="activity-day-header">${day}</div>`;
+      const byAsset = {};
+      entries.forEach(n => {
+        const key = n.asset_id || 'general';
+        if (!byAsset[key]) byAsset[key] = [];
+        byAsset[key].push(n);
+      });
+      for (const [assetId, items] of Object.entries(byAsset)) {
+        if (totalShown >= activityShowing) break;
+        totalShown++;
+        const latest = items[0];
+        const timeAgo = (() => {
+          const mins = Math.floor((new Date() - new Date(latest.created_at)) / 60000);
+          if (mins < 1) return 'just now';
+          if (mins < 60) return mins + 'm ago';
+          const hrs = Math.floor(mins/60);
+          if (hrs < 24) return hrs + 'h ago';
+          return Math.floor(hrs/24) + 'd ago';
+        })();
+        const iconClass = iconClasses[latest.action] || 'activity-icon-updated';
+        const icon = icons[latest.action] || '✎';
+        const groupId = assetId.replace(/[^a-z0-9]/gi,'') + day.replace(/[^a-z0-9]/gi,'');
+        if (items.length === 1) {
+          html += `<div class="activity-entry">
+            <div class="activity-icon ${iconClass}">${icon}</div>
+            <div class="activity-body">
+              <div class="activity-action">${latest.action} — <span style="color:var(--cyan);font-family:var(--mono);font-size:11px">${latest.asset_id||'—'}</span></div>
+              <div class="activity-detail">${latest.details||'—'}</div>
+              <div class="activity-meta">${latest.tech||'—'} · ${timeAgo}</div>
+            </div>
+          </div>`;
+        } else {
+          html += `<div class="activity-group">
+            <div class="activity-group-header" onclick="toggleActivityGroup('${groupId}')">
+              <div class="activity-group-icon ${iconClass}">${icon}</div>
+              <div class="activity-group-info">
+                <div class="activity-group-title">${assetId} — ${items.length} changes</div>
+                <div class="activity-group-meta">${latest.tech||'—'} · ${timeAgo}</div>
+              </div>
+              <span class="activity-group-count">${items.length}</span>
+              <span class="activity-group-arrow" id="ag-arrow-${groupId}">▾</span>
+            </div>
+            <div class="activity-group-items" id="ag-items-${groupId}">
+              ${items.map(n => `<div class="activity-sub-item">
+                <div class="activity-sub-action">${n.action}</div>
+                <div class="activity-sub-meta">${n.details||n.tech||'—'}</div>
+              </div>`).join('')}
+            </div>
+          </div>`;
+        }
+      }
+    }
+    const remaining = filtered.length - totalShown;
+    if (remaining > 0) {
+      html += `<div class="activity-load-more" onclick="activityShowing+=10;renderActivityFeed()">▾ Load ${Math.min(remaining,10)} more (${remaining} remaining)</div>`;
+    }
+    document.getElementById('stat-activity').innerHTML = html;
+  }
   (async () => {
     try {
-      const {data} = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(15);
-      const icons = {
-        'Asset Created':'✚', 'Asset Updated':'✎', 'Site Transfer':'🔄',
-        'RMA Opened':'🔴', 'RMA Closed':'✓', 'Condition Changed':'⚠',
-        'Asset Deleted':'✕'
-      };
-      const iconClasses = {
-        'Asset Created':'activity-icon-created', 'Asset Updated':'activity-icon-updated',
-        'Site Transfer':'activity-icon-transfer', 'RMA Opened':'activity-icon-rma',
-        'RMA Closed':'activity-icon-rma', 'Condition Changed':'activity-icon-condition',
-        'Asset Deleted':'activity-icon-deleted'
-      };
+      const {data} = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(200);
       if (!data || !data.length) {
         document.getElementById('stat-activity').innerHTML='<div class="activity-empty">No activity yet</div>';
         return;
       }
-      document.getElementById('stat-activity').innerHTML = data.map(n => {
-        const ts = new Date(n.created_at);
-        const timeAgo = (() => {
-          const mins = Math.floor((new Date() - ts) / 60000);
-          if (mins < 1) return 'just now';
-          if (mins < 60) return mins + 'm ago';
-          const hrs = Math.floor(mins / 60);
-          if (hrs < 24) return hrs + 'h ago';
-          return Math.floor(hrs/24) + 'd ago';
-        })();
-        return `<div class="activity-entry">
-          <div class="activity-icon ${iconClasses[n.action]||'activity-icon-updated'}">${icons[n.action]||'✎'}</div>
-          <div class="activity-body">
-            <div class="activity-action">${n.action} — <span style="color:var(--cyan);font-family:var(--mono);font-size:11px">${n.asset_id||'—'}</span></div>
-            <div class="activity-detail">${n.details||'—'}</div>
-            <div class="activity-meta">${n.tech||'—'} · ${timeAgo}</div>
-          </div>
-        </div>`;
-      }).join('');
+      activityData = data;
+      renderActivityFeed();
     } catch(e) { document.getElementById('stat-activity').innerHTML='<div class="activity-empty">Could not load activity</div>'; }
   })();
 }
