@@ -1521,6 +1521,111 @@ function renderLog() {
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
+// ── ACTIVITY FEED ──────────────────────────────────────────────────────────
+let activityFilter = 'all';
+let activityData = [];
+let activityShowing = 10;
+function setActivityFilter(filter, btn) {
+  activityFilter = filter;
+  activityShowing = 10;
+  document.querySelectorAll('.activity-filter-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderActivityFeed();
+}
+function toggleActivityGroup(id) {
+  const items = document.getElementById('ag-items-' + id);
+  const arrow = document.getElementById('ag-arrow-' + id);
+  if (!items) return;
+  items.classList.toggle('open');
+  if (arrow) arrow.classList.toggle('open');
+}
+function renderActivityFeed() {
+  const filterMap = {
+    all: () => true,
+    asset: n => n.action === 'Asset Created' || n.action === 'Asset Updated',
+    status: n => n.action && n.action.includes('Status'),
+    rma: n => n.action && n.action.includes('RMA'),
+    transfer: n => n.action === 'Site Transfer'
+  };
+  const filtered = activityData.filter(filterMap[activityFilter] || filterMap.all);
+  const icons = {'Asset Created':'✚','Asset Updated':'✎','Site Transfer':'🔄','RMA Opened':'🔴','RMA Closed':'✓','Condition Changed':'⚠','Asset Deleted':'✕','Status Changed':'✎'};
+  const iconClasses = {'Asset Created':'activity-icon-created','Asset Updated':'activity-icon-updated','Site Transfer':'activity-icon-transfer','RMA Opened':'activity-icon-rma','RMA Closed':'activity-icon-rma','Condition Changed':'activity-icon-condition','Asset Deleted':'activity-icon-deleted'};
+  if (!filtered.length) {
+    document.getElementById('stat-activity').innerHTML = '<div class="activity-empty">No activity found</div>';
+    return;
+  }
+  const days = {};
+  filtered.forEach(n => {
+    const d = new Date(n.created_at);
+    const now = new Date();
+    const diffDays = Math.floor((now - d) / 86400000);
+    const key = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Yesterday' : d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    if (!days[key]) days[key] = [];
+    days[key].push(n);
+  });
+  let html = '';
+  let totalShown = 0;
+  for (const [day, entries] of Object.entries(days)) {
+    if (totalShown >= activityShowing) break;
+    html += `<div class="activity-day-header">${day}</div>`;
+    const byAsset = {};
+    entries.forEach(n => {
+      const key = n.asset_id || 'general';
+      if (!byAsset[key]) byAsset[key] = [];
+      byAsset[key].push(n);
+    });
+    for (const [assetId, items] of Object.entries(byAsset)) {
+      if (totalShown >= activityShowing) break;
+      totalShown++;
+      const latest = items[0];
+      const timeAgo = (() => {
+        const mins = Math.floor((new Date() - new Date(latest.created_at)) / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        const hrs = Math.floor(mins/60);
+        if (hrs < 24) return hrs + 'h ago';
+        return Math.floor(hrs/24) + 'd ago';
+      })();
+      const iconClass = iconClasses[latest.action] || 'activity-icon-updated';
+      const icon = icons[latest.action] || '✎';
+      const groupId = assetId.replace(/[^a-z0-9]/gi,'') + day.replace(/[^a-z0-9]/gi,'');
+      if (items.length === 1) {
+        html += `<div class="activity-entry">
+          <div class="activity-icon ${iconClass}">${icon}</div>
+          <div class="activity-body">
+            <div class="activity-action">${latest.action} — <span style="color:var(--cyan);font-family:var(--mono);font-size:11px">${latest.asset_id||'—'}</span></div>
+            <div class="activity-detail">${latest.details||'—'}</div>
+            <div class="activity-meta">${latest.tech||'—'} · ${timeAgo}</div>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="activity-group">
+          <div class="activity-group-header" onclick="toggleActivityGroup('${groupId}')">
+            <div class="activity-group-icon ${iconClass}">${icon}</div>
+            <div class="activity-group-info">
+              <div class="activity-group-title">${assetId} — ${items.length} changes</div>
+              <div class="activity-group-meta">${latest.tech||'—'} · ${timeAgo}</div>
+            </div>
+            <span class="activity-group-count">${items.length}</span>
+            <span class="activity-group-arrow" id="ag-arrow-${groupId}">▾</span>
+          </div>
+          <div class="activity-group-items" id="ag-items-${groupId}">
+            ${items.map(n => `<div class="activity-sub-item">
+              <div class="activity-sub-action">${n.action}</div>
+              <div class="activity-sub-meta">${n.details||n.tech||'—'}</div>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }
+    }
+  }
+  const remaining = filtered.length - totalShown;
+  if (remaining > 0) {
+    html += `<div class="activity-load-more" onclick="activityShowing+=10;renderActivityFeed()">▾ Load ${Math.min(remaining,10)} more (${remaining} remaining)</div>`;
+  }
+  document.getElementById('stat-activity').innerHTML = html;
+}
+
 function renderDash() {
   document.getElementById('d-total').textContent    =assets.length;
   document.getElementById('d-installed').textContent=assets.filter(a=>a.status==='Installed').length;
@@ -1600,109 +1705,6 @@ function renderDash() {
   })();
 
   // Recent Activity
-  let activityFilter = 'all';
-  let activityData = [];
-  let activityShowing = 10;
-  function setActivityFilter(filter, btn) {
-    activityFilter = filter;
-    activityShowing = 10;
-    document.querySelectorAll('.activity-filter-tab').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    renderActivityFeed();
-  }
-  function toggleActivityGroup(id) {
-    const items = document.getElementById('ag-items-' + id);
-    const arrow = document.getElementById('ag-arrow-' + id);
-    if (!items) return;
-    items.classList.toggle('open');
-    if (arrow) arrow.classList.toggle('open');
-  }
-  function renderActivityFeed() {
-    const filterMap = {
-      all: () => true,
-      asset: n => n.action === 'Asset Created' || n.action === 'Asset Updated',
-      status: n => n.action && n.action.includes('Status'),
-      rma: n => n.action && n.action.includes('RMA'),
-      transfer: n => n.action === 'Site Transfer'
-    };
-    const filtered = activityData.filter(filterMap[activityFilter] || filterMap.all);
-    const icons = {'Asset Created':'✚','Asset Updated':'✎','Site Transfer':'🔄','RMA Opened':'🔴','RMA Closed':'✓','Condition Changed':'⚠','Asset Deleted':'✕','Status Changed':'✎'};
-    const iconClasses = {'Asset Created':'activity-icon-created','Asset Updated':'activity-icon-updated','Site Transfer':'activity-icon-transfer','RMA Opened':'activity-icon-rma','RMA Closed':'activity-icon-rma','Condition Changed':'activity-icon-condition','Asset Deleted':'activity-icon-deleted'};
-    if (!filtered.length) {
-      document.getElementById('stat-activity').innerHTML = '<div class="activity-empty">No activity found</div>';
-      return;
-    }
-    const days = {};
-    filtered.forEach(n => {
-      const d = new Date(n.created_at);
-      const now = new Date();
-      const diffDays = Math.floor((now - d) / 86400000);
-      const key = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Yesterday' : d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-      if (!days[key]) days[key] = [];
-      days[key].push(n);
-    });
-    let html = '';
-    let totalShown = 0;
-    for (const [day, entries] of Object.entries(days)) {
-      if (totalShown >= activityShowing) break;
-      html += `<div class="activity-day-header">${day}</div>`;
-      const byAsset = {};
-      entries.forEach(n => {
-        const key = n.asset_id || 'general';
-        if (!byAsset[key]) byAsset[key] = [];
-        byAsset[key].push(n);
-      });
-      for (const [assetId, items] of Object.entries(byAsset)) {
-        if (totalShown >= activityShowing) break;
-        totalShown++;
-        const latest = items[0];
-        const timeAgo = (() => {
-          const mins = Math.floor((new Date() - new Date(latest.created_at)) / 60000);
-          if (mins < 1) return 'just now';
-          if (mins < 60) return mins + 'm ago';
-          const hrs = Math.floor(mins/60);
-          if (hrs < 24) return hrs + 'h ago';
-          return Math.floor(hrs/24) + 'd ago';
-        })();
-        const iconClass = iconClasses[latest.action] || 'activity-icon-updated';
-        const icon = icons[latest.action] || '✎';
-        const groupId = assetId.replace(/[^a-z0-9]/gi,'') + day.replace(/[^a-z0-9]/gi,'');
-        if (items.length === 1) {
-          html += `<div class="activity-entry">
-            <div class="activity-icon ${iconClass}">${icon}</div>
-            <div class="activity-body">
-              <div class="activity-action">${latest.action} — <span style="color:var(--cyan);font-family:var(--mono);font-size:11px">${latest.asset_id||'—'}</span></div>
-              <div class="activity-detail">${latest.details||'—'}</div>
-              <div class="activity-meta">${latest.tech||'—'} · ${timeAgo}</div>
-            </div>
-          </div>`;
-        } else {
-          html += `<div class="activity-group">
-            <div class="activity-group-header" onclick="toggleActivityGroup('${groupId}')">
-              <div class="activity-group-icon ${iconClass}">${icon}</div>
-              <div class="activity-group-info">
-                <div class="activity-group-title">${assetId} — ${items.length} changes</div>
-                <div class="activity-group-meta">${latest.tech||'—'} · ${timeAgo}</div>
-              </div>
-              <span class="activity-group-count">${items.length}</span>
-              <span class="activity-group-arrow" id="ag-arrow-${groupId}">▾</span>
-            </div>
-            <div class="activity-group-items" id="ag-items-${groupId}">
-              ${items.map(n => `<div class="activity-sub-item">
-                <div class="activity-sub-action">${n.action}</div>
-                <div class="activity-sub-meta">${n.details||n.tech||'—'}</div>
-              </div>`).join('')}
-            </div>
-          </div>`;
-        }
-      }
-    }
-    const remaining = filtered.length - totalShown;
-    if (remaining > 0) {
-      html += `<div class="activity-load-more" onclick="activityShowing+=10;renderActivityFeed()">▾ Load ${Math.min(remaining,10)} more (${remaining} remaining)</div>`;
-    }
-    document.getElementById('stat-activity').innerHTML = html;
-  }
   (async () => {
     try {
       const {data} = await db.from('notifications').select('*').order('created_at',{ascending:false}).limit(200);
